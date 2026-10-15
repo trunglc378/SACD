@@ -28,4 +28,5 @@ $RECYCLE.BIN/
 
 ## Build outputs & Docker data
 dist/
+publish/
 docker_data/

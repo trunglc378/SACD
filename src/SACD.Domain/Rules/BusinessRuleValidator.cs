@@ -232,5 +232,67 @@ namespace SACD.Domain.Rules
                 throw new DomainValidationException("InvalidTransition", "Cannot revert from Dispatched back to Prepared (side effects may have occurred) (BR-20).");
             }
         }
+
+        /// <summary>
+        /// BR-09: Validate Evidence UTF-16 half-open interval [start, end) on NFC string without splitting surrogate pairs,
+        /// and ensure quoteHash matches SHA256 of the extracted UTF-8 substring.
+        /// </summary>
+        public static void ValidateEvidenceInterval(EvidenceRefEntity ev, string rawBlockText)
+        {
+            if (ev.StartOffset < 0 || ev.EndOffset <= ev.StartOffset || ev.EndOffset > rawBlockText.Length)
+            {
+                throw new DomainValidationException("InvalidEvidence", 
+                    $"Evidence offset [{ev.StartOffset}, {ev.EndOffset}) is outside valid block bounds [0, {rawBlockText.Length}] (BR-09).");
+            }
+
+            // Surrogate pair protection
+            if (char.IsLowSurrogate(rawBlockText[ev.StartOffset]))
+            {
+                throw new DomainValidationException("InvalidEvidence", "Evidence startOffset cannot split a UTF-16 surrogate pair (BR-09).");
+            }
+
+            if (char.IsHighSurrogate(rawBlockText[ev.EndOffset - 1]))
+            {
+                throw new DomainValidationException("InvalidEvidence", "Evidence endOffset cannot split a UTF-16 surrogate pair (BR-09).");
+            }
+
+            string quote = rawBlockText.Substring(ev.StartOffset, ev.EndOffset - ev.StartOffset);
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            byte[] hashBytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(quote));
+            string computedHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+
+            if (!string.Equals(computedHash, ev.QuoteHash, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new DomainValidationException("InvalidEvidence", 
+                    $"Evidence quote hash mismatch. Expected {computedHash}, but record has {ev.QuoteHash} (BR-09).");
+            }
+        }
+
+        /// <summary>
+        /// BR-05 & NFR-05: Check magic bytes for PDF, DOCX/ZIP, and plain text.
+        /// </summary>
+        public static void ValidateFileSignature(byte[] headerBytes, string extension)
+        {
+            if (headerBytes == null || headerBytes.Length < 4)
+                throw new DomainValidationException("InputLimitExceeded", "File header too small to determine signature.");
+
+            string ext = extension.ToLowerInvariant();
+            if (ext == ".pdf")
+            {
+                // %PDF = 0x25, 0x50, 0x44, 0x46
+                if (headerBytes[0] != 0x25 || headerBytes[1] != 0x50 || headerBytes[2] != 0x44 || headerBytes[3] != 0x46)
+                {
+                    throw new DomainValidationException("InputLimitExceeded", "File claims to be PDF but magic bytes %PDF do not match (BR-05).");
+                }
+            }
+            else if (ext == ".docx" || ext == ".zip")
+            {
+                // PK\x03\x04 = 0x50, 0x4B, 0x03, 0x04
+                if (headerBytes[0] != 0x50 || headerBytes[1] != 0x4B)
+                {
+                    throw new DomainValidationException("InputLimitExceeded", "File claims to be DOCX/ZIP but PK header does not match (BR-05).");
+                }
+            }
+        }
     }
 }

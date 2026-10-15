@@ -77,8 +77,10 @@ namespace SACD.Domain.ValueObjects
             {
                 if (DateTime.TryParse(dueDateStr, out var parsedDate))
                 {
-                    // Business date ends at end of the day 23:59:59 UTC
-                    targetUtc = new DateTime(parsedDate.Year, parsedDate.Month, parsedDate.Day, 23, 59, 59, DateTimeKind.Utc);
+                    // NFR-23 & BR-17: Asia/Ho_Chi_Minh (UTC+7) business date ends at 23:59:59 VN time
+                    // 23:59:59 VN time = 16:59:59 UTC of the same day
+                    var vnDateTime = new DateTimeOffset(parsedDate.Year, parsedDate.Month, parsedDate.Day, 23, 59, 59, TimeSpan.FromHours(7));
+                    targetUtc = vnDateTime.UtcDateTime;
                 }
                 else
                 {

@@ -314,5 +314,237 @@ VALUES ('doc-test', 'rev-test', 'blk-test', @raw, @search);";
             Assert.False(conflictRes.Success);
             Assert.Equal(ErrorCodes.RevisionConflict, conflictRes.Code);
         }
+
+        [Fact]
+        public void BusinessRules_ValidateFileSignature_ShouldValidateMagicBytesAccurately()
+        {
+            // Valid PDF header %PDF
+            byte[] validPdfHeader = new byte[] { 0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x37 };
+            BusinessRuleValidator.ValidateFileSignature(validPdfHeader, ".pdf");
+
+            // Invalid PDF header
+            byte[] invalidPdfHeader = new byte[] { 0x00, 0x01, 0x02, 0x03 };
+            Assert.Throws<DomainValidationException>(() => 
+                BusinessRuleValidator.ValidateFileSignature(invalidPdfHeader, ".pdf"));
+
+            // Valid DOCX / ZIP header PK\x03\x04
+            byte[] validDocxHeader = new byte[] { 0x50, 0x4B, 0x03, 0x04, 0x14, 0x00 };
+            BusinessRuleValidator.ValidateFileSignature(validDocxHeader, ".docx");
+
+            // Invalid DOCX header
+            Assert.Throws<DomainValidationException>(() => 
+                BusinessRuleValidator.ValidateFileSignature(invalidPdfHeader, ".docx"));
+        }
+
+        [Fact]
+        public void BusinessRules_ValidateEvidenceInterval_ShouldEnforceSurrogateAndQuoteHash()
+        {
+            string blockText = "Quyết định xử lý văn bản số 123/QĐ-UBND tỉnh Lào Cai.";
+            string quote = "123/QĐ-UBND";
+            int start = blockText.IndexOf(quote);
+            int end = start + quote.Length;
+
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            byte[] hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(quote));
+            string quoteHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+
+            var validEv = new EvidenceRefEntity
+            {
+                Id = "ev-1",
+                RevisionId = "rev-1",
+                BlockId = "blk-1",
+                StartOffset = start,
+                EndOffset = end,
+                QuoteHash = quoteHash
+            };
+
+            // Should pass validation
+            BusinessRuleValidator.ValidateEvidenceInterval(validEv, blockText);
+
+            // Corrupted quoteHash should throw InvalidEvidence
+            var invalidHashEv = new EvidenceRefEntity
+            {
+                Id = "ev-corrupt",
+                RevisionId = "rev-1",
+                BlockId = "blk-1",
+                StartOffset = start,
+                EndOffset = end,
+                QuoteHash = "0000000000000000000000000000000000000000000000000000000000000000"
+            };
+            Assert.Throws<DomainValidationException>(() => 
+                BusinessRuleValidator.ValidateEvidenceInterval(invalidHashEv, blockText));
+
+            // Out-of-bounds offset should throw InvalidEvidence
+            var oobEv = new EvidenceRefEntity
+            {
+                Id = "ev-oob",
+                RevisionId = "rev-1",
+                BlockId = "blk-1",
+                StartOffset = 0,
+                EndOffset = blockText.Length + 10,
+                QuoteHash = quoteHash
+            };
+            Assert.Throws<DomainValidationException>(() => 
+                BusinessRuleValidator.ValidateEvidenceInterval(oobEv, blockText));
+        }
+
+        [Fact]
+        public async Task TransferService_ImportAsync_ShouldDetectConflictPerBr16()
+        {
+            using var dbContext = new SqliteDatabaseContext(_testWorkspaceDir);
+            dbContext.EnsureInitialized();
+
+            var fileStore = new LocalFileStore(_testWorkspaceDir);
+            var transferMgr = new UsbTransferManager();
+            var service = new TransferService(dbContext, fileStore, transferMgr);
+            var actor = ActorContext.Create("S-TEST", "ws-target");
+
+            // Seed an existing import map entry (need TransferPackage first)
+            using (var conn = dbContext.CreateConnection())
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = @"
+INSERT INTO TransferPackage (id, originWorkspaceId, schemaVersion, manifestHash, state, createdUtc)
+VALUES ('pkg-old', 'ws-origin', 1, 'manifest-old', 'Imported', datetime('now'));
+
+INSERT INTO ImportMap (originWorkspaceId, entityType, originEntityId, originVersion, contentHash, localEntityId, packageId)
+VALUES ('ws-origin', 'Document', 'doc-conflict-1', '1', '1111111111111111111111111111111111111111111111111111111111111111', 'doc-conflict-1', 'pkg-old');";
+                cmd.ExecuteNonQuery();
+            }
+
+            // Create a package with same origin entity & version but DIFFERENT contentHash
+            string sampleFile = Path.Combine(_testWorkspaceDir, "conflict_sample.txt");
+            await File.WriteAllTextAsync(sampleFile, "Nội dung xung đột", Encoding.UTF8);
+            var fo = await fileStore.StoreFileAsync(sampleFile);
+
+            var conflictDoc = new DocumentEntity
+            {
+                Id = "doc-conflict-1",
+                DossierId = "dos-1",
+                ObjectHash = fo.Hash,
+                OriginalName = "conflict_sample.txt",
+                CurrentRevisionId = "1"
+            };
+
+            string zipPath = Path.Combine(_testWorkspaceDir, "pkg_conflict.zip");
+            var (createdZip, _, _, _) = await transferMgr.CreatePackageAsync(zipPath, "ws-origin", new[] { conflictDoc }, fileStore);
+
+            // Import should detect conflict and return ErrorCodes.TransferConflict
+            var importRes = await service.ImportAsync(new TransferImportRequest(createdZip, false), actor);
+            Assert.False(importRes.Success);
+            Assert.Equal(ErrorCodes.TransferConflict, importRes.Code);
+        }
+
+        [Fact]
+        public async Task FactService_AggregateAsync_ShouldSupportFlowStockAndRatioMetrics()
+        {
+            using var dbContext = new SqliteDatabaseContext(_testWorkspaceDir);
+            dbContext.EnsureInitialized();
+
+            var factService = new FactService(dbContext);
+            var actor = ActorContext.Create("S-TEST", "ws-test");
+
+            using (var conn = dbContext.CreateConnection())
+            using (var cmd = conn.CreateCommand())
+            {
+                // Seed metric definitions and required foreign keys
+                cmd.CommandText = @"
+INSERT INTO FileObject (hash, relativePath, sizeBytes, mediaType, createdUtc)
+VALUES ('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'objects/0123', 100, 'application/pdf', datetime('now'));
+
+INSERT INTO MetricDefinitionVersion (id, logicalId, versionNo, name, unitCode, kind, ruleJson, createdUtc)
+VALUES 
+ ('met-flow', 'MET-FLOW', 1, 'Tổng số văn bản', 'DOC', 'Flow', '{}', datetime('now')),
+ ('met-ratio', 'MET-RATIO', 1, 'Tỷ lệ đúng hạn', 'PERCENT', 'Ratio', '{}', datetime('now'));
+
+INSERT INTO Dossier (id, businessCode, state, receivedUtc) VALUES ('dos-fact', 'HS-FACT-1', 'Received', datetime('now'));
+INSERT INTO Document (id, dossierId, objectHash, originalName, sourceKind, status, createdUtc)
+VALUES ('doc-fact', 'dos-fact', '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'fact.pdf', 'File', 'Imported', datetime('now'));
+INSERT INTO TextRevision (id, documentId, versionNo, method, reviewState, createdUtc)
+VALUES ('rev-fact', 'doc-fact', 1, 'OCR-1', 'NeedsReview', datetime('now'));
+
+INSERT INTO FactVersion (id, logicalId, versionNo, metricVersionId, sourceRevisionId, valueStatus, valueDecimalText, periodStart, periodEnd, periodKind, scopeJson, status, reviewerSid, reviewedUtc, createdUtc)
+VALUES 
+ ('fact-1', 'F1', 1, 'met-flow', 'rev-fact', 'Known', '10', '2026-10-01', '2026-10-15', 'Month', '{}', 'Confirmed', 'S-TEST', datetime('now'), datetime('now')),
+ ('fact-2', 'F2', 1, 'met-flow', 'rev-fact', 'Known', '25', '2026-10-16', '2026-10-31', 'Month', '{}', 'Confirmed', 'S-TEST', datetime('now'), datetime('now')),
+ ('fact-num', 'F-NUM', 1, 'met-ratio', 'rev-fact', 'Known', '18', '2026-10-01', '2026-10-31', 'Month', '{}', 'Confirmed', 'S-TEST', datetime('now'), datetime('now')),
+ ('fact-den', 'F-DEN', 1, 'met-ratio', 'rev-fact', 'Known', '20', '2026-10-01', '2026-10-31', 'Month', '{}', 'Confirmed', 'S-TEST', datetime('now'), datetime('now'));";
+                cmd.ExecuteNonQuery();
+            }
+
+            // Aggregate Flow metric: 10 + 25 = 35
+            var flowRes = await factService.AggregateAsync(new AggregateRequest(
+                MetricVersionId: "met-flow",
+                PeriodStart: "2026-10-01",
+                PeriodEnd: "2026-10-31",
+                GroupBy: "None",
+                ConfirmedFactVersionIds: new[] { "fact-1", "fact-2" }
+            ), actor);
+
+            Assert.True(flowRes.Success);
+            Assert.Equal(35m, flowRes.Value!.TotalValue);
+            Assert.Equal("35", flowRes.Value.FormattedTotal);
+
+            // Aggregate Ratio metric: 18 / 20 = 90%
+            var ratioRes = await factService.AggregateAsync(new AggregateRequest(
+                MetricVersionId: "met-ratio",
+                PeriodStart: "2026-10-01",
+                PeriodEnd: "2026-10-31",
+                GroupBy: "None",
+                ConfirmedFactVersionIds: new[] { "fact-num", "fact-den" }
+            ), actor);
+
+            Assert.True(ratioRes.Success);
+            Assert.Equal(0.9m, ratioRes.Value!.TotalValue);
+            Assert.Equal("90.00%", ratioRes.Value.FormattedTotal);
+        }
+
+        [Fact]
+        public async Task ReportService_StaleInvalidation_ShouldPreventSubmissionExportPerBr30()
+        {
+            using var dbContext = new SqliteDatabaseContext(_testWorkspaceDir);
+            dbContext.EnsureInitialized();
+
+            var fileStore = new LocalFileStore(_testWorkspaceDir);
+            var wordGen = new WordReportGenerator();
+            var reportService = new ReportService(dbContext, fileStore, wordGen);
+            var actor = ActorContext.Create("S-TEST", "ws-test");
+
+            string reportId = "rep-stale-test";
+            string revId = "rev-stale-test";
+
+            using (var conn = dbContext.CreateConnection())
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = @"
+INSERT INTO FileObject (hash, relativePath, sizeBytes, mediaType, createdUtc)
+VALUES ('aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899', 'objects/tpl', 500, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', datetime('now'));
+
+INSERT INTO TemplateVersion (id, logicalId, versionNo, objectHash, mappingJson, mappingHash, createdUtc)
+VALUES ('tpl-test-1', 'TPL-LOG-1', 1, 'aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899', '{}', 'aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899', datetime('now'));
+
+INSERT INTO Report (id, name, createdUtc) VALUES (@repId, 'Báo cáo kiểm thử', datetime('now'));
+
+INSERT INTO ReportRevision (id, reportId, versionNo, templateVersionId, snapshotJson, state, isStale, reviewerSid, reviewedUtc, checklistJson, createdUtc)
+VALUES (@revId, @repId, 1, 'tpl-test-1', '{}', 'Reviewed', 1, 'S-REVIEWER', datetime('now'), '[]', datetime('now'));
+
+INSERT INTO ReportSection (id, reportRevisionId, sectionKey, ordinal, text)
+VALUES ('sec-1', @revId, 'I', 1, 'Nội dung');";
+                cmd.Parameters.AddWithValue("@repId", reportId);
+                cmd.Parameters.AddWithValue("@revId", revId);
+                cmd.ExecuteNonQuery();
+            }
+
+            // Exporting stale report in Submission mode must fail per BR-30
+            var exportRes = await reportService.ExportAsync(new ExportRequest(
+                ReportRevisionId: revId,
+                ExportMode: "Submission",
+                DestinationDirectory: _testWorkspaceDir,
+                Overwrite: true
+            ), actor);
+
+            Assert.False(exportRes.Success);
+            Assert.Equal(ErrorCodes.RevisionConflict, exportRes.Code);
+        }
     }
 }

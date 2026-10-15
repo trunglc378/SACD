@@ -186,6 +186,30 @@ VALUES (@pkgId, @rel, @size, @hash, @type, @entId, @ver);";
             using var conn = _dbContext.CreateConnection();
             using var tx = conn.BeginTransaction();
 
+            // BR-16: Conflict detection against ImportMap
+            foreach (var item in manifest.Items)
+            {
+                using var cmdCheck = conn.CreateCommand();
+                cmdCheck.Transaction = tx;
+                cmdCheck.CommandText = @"
+SELECT contentHash FROM ImportMap 
+WHERE originWorkspaceId=@ws AND entityType=@type AND originEntityId=@origId AND originVersion=@ver;";
+                cmdCheck.Parameters.AddWithValue("@ws", manifest.OriginWorkspaceId);
+                cmdCheck.Parameters.AddWithValue("@type", item.EntityType);
+                cmdCheck.Parameters.AddWithValue("@origId", item.OriginEntityId);
+                cmdCheck.Parameters.AddWithValue("@ver", item.OriginVersion);
+                var existingHash = await cmdCheck.ExecuteScalarAsync(ct);
+                if (existingHash != null && !string.Equals(existingHash.ToString(), item.ContentHash, StringComparison.OrdinalIgnoreCase))
+                {
+                    tx.Rollback();
+                    return OperationResult<TransferResult>.Fail(
+                        ErrorCodes.TransferConflict,
+                        $"Xung đột dữ liệu tiếp nhận (BR-16): Thực thể {item.EntityType} [{item.OriginEntityId}] v{item.OriginVersion} từ kho {manifest.OriginWorkspaceId} đã tồn tại với mã băm khác ({existingHash} != {item.ContentHash}).",
+                        actor.CorrelationId
+                    );
+                }
+            }
+
             // Record TransferPackage
             using var cmdPkg = conn.CreateCommand();
             cmdPkg.Transaction = tx;
@@ -805,19 +829,68 @@ VALUES (@id, @logId, 1, @canId, 'Resolved', @reason, @sid, @now);";
         {
             decimal total = 0m;
             int count = 0;
+            string metricKind = "Flow";
 
             using var conn = _dbContext.CreateConnection();
+
+            // Query metric definition kind
+            using (var cmdKind = conn.CreateCommand())
+            {
+                cmdKind.CommandText = "SELECT kind FROM MetricDefinitionVersion WHERE id=@id LIMIT 1;";
+                cmdKind.Parameters.AddWithValue("@id", request.MetricVersionId);
+                var kindObj = await cmdKind.ExecuteScalarAsync(ct);
+                if (kindObj != null)
+                {
+                    metricKind = kindObj.ToString()!;
+                }
+            }
+
+            var values = new List<decimal>();
             foreach (var fId in request.ConfirmedFactVersionIds)
             {
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT valueDecimalText FROM FactVersion WHERE id=@id AND status='Confirmed' AND valueStatus='Known';";
+                cmd.CommandText = "SELECT valueDecimalText FROM FactVersion WHERE id=@id AND status='Confirmed' AND valueStatus='Known' ORDER BY periodEnd DESC;";
                 cmd.Parameters.AddWithValue("@id", fId);
                 var valObj = await cmd.ExecuteScalarAsync(ct);
                 if (valObj != null && decimal.TryParse(valObj.ToString(), out var dec))
                 {
-                    total += dec;
+                    values.Add(dec);
                     count++;
                 }
+            }
+
+            string displayStr;
+            if (metricKind == "Stock" && values.Count > 0)
+            {
+                // Stock metric: take latest observation (first item ordered by periodEnd DESC)
+                total = values[0];
+                displayStr = total.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+            }
+            else if (metricKind == "Ratio" && values.Count >= 2)
+            {
+                // Ratio metric: numerator = values[0], denominator = values[1]
+                long num = (long)values[0];
+                long den = (long)values[1];
+                if (den == 0)
+                {
+                    displayStr = "N/A (Mẫu số bằng 0)";
+                    total = 0m;
+                }
+                else
+                {
+                    var exactRatio = new ExactRatio(num, den);
+                    total = exactRatio.ToDecimal(4);
+                    displayStr = exactRatio.ToPercentageString(2);
+                }
+            }
+            else
+            {
+                // Flow or Cumulative: Sum of all observations
+                foreach (var v in values)
+                {
+                    total += v;
+                }
+                displayStr = total.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
             }
 
             string runId = Guid.NewGuid().ToString("N");
@@ -830,13 +903,13 @@ VALUES (@id, @metId, @q, @res, @hash, 'Valid', @now);";
             cmdRun.Parameters.AddWithValue("@id", runId);
             cmdRun.Parameters.AddWithValue("@metId", request.MetricVersionId);
             cmdRun.Parameters.AddWithValue("@q", JsonSerializer.Serialize(request));
-            cmdRun.Parameters.AddWithValue("@res", JsonSerializer.Serialize(new { total, count }));
+            cmdRun.Parameters.AddWithValue("@res", JsonSerializer.Serialize(new { total, count, metricKind }));
             cmdRun.Parameters.AddWithValue("@hash", snapshotHash);
             cmdRun.Parameters.AddWithValue("@now", DateTime.UtcNow.ToString("o"));
             await cmdRun.ExecuteNonQueryAsync(ct);
 
             return OperationResult<AggregateResult>.Ok(new AggregateResult(
-                runId, request.MetricVersionId, total, total.ToString("N0", System.Globalization.CultureInfo.InvariantCulture), count, "Valid"
+                runId, request.MetricVersionId, total, displayStr, count, "Valid"
             ), actor.CorrelationId);
         }
     }
@@ -1025,7 +1098,14 @@ WHERE id=@id;";
 
             if (request.ExportMode == "Submission")
             {
-                BusinessRuleValidator.ValidateExportSubmission(rev);
+                try
+                {
+                    BusinessRuleValidator.ValidateExportSubmission(rev);
+                }
+                catch (DomainValidationException ex)
+                {
+                    return OperationResult<ExportInfo>.Fail(ex.ErrorCode, ex.Message, actor.CorrelationId);
+                }
             }
 
             // Fetch sections

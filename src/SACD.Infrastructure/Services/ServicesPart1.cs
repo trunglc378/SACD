@@ -25,10 +25,12 @@ namespace SACD.Infrastructure.Services
     public class WorkspaceService : IWorkspaceService
     {
         private readonly SqliteDatabaseContext _dbContext;
+        private readonly IAuditLogger _auditLogger;
 
-        public WorkspaceService(SqliteDatabaseContext dbContext)
+        public WorkspaceService(SqliteDatabaseContext dbContext, IAuditLogger? auditLogger = null)
         {
             _dbContext = dbContext;
+            _auditLogger = auditLogger ?? new AuditLogger();
         }
 
         public async Task<OperationResult<WorkspaceInfo>> OpenAsync(WorkspaceOpenRequest request, ActorContext actor, CancellationToken ct = default)
@@ -56,6 +58,8 @@ namespace SACD.Infrastructure.Services
                 };
 
                 BusinessRuleValidator.ValidateWorkspace(ws, request.ExpectedSchemaVersion);
+
+                await _auditLogger.LogAsync(conn, null, actor, "OpenWorkspace", "Workspace", ws.Id, null, "Success", ct);
 
                 return OperationResult<WorkspaceInfo>.Ok(new WorkspaceInfo(
                     ws.Id, _dbContext.WorkspaceDirectory, ws.OwnerSid, ws.MachineProfile, ws.SchemaVersion, ws.CreatedUtc
@@ -124,11 +128,13 @@ VALUES (@id, @ownerSid, @profile, @schema, @createdUtc);";
     {
         private readonly SqliteDatabaseContext _dbContext;
         private readonly IFileStore _fileStore;
+        private readonly IAuditLogger _auditLogger;
 
-        public IntakeService(SqliteDatabaseContext dbContext, IFileStore fileStore)
+        public IntakeService(SqliteDatabaseContext dbContext, IFileStore fileStore, IAuditLogger? auditLogger = null)
         {
             _dbContext = dbContext;
             _fileStore = fileStore;
+            _auditLogger = auditLogger ?? new AuditLogger();
         }
 
         public async Task<OperationResult<ImportBatchResult>> ImportAsync(ImportRequest request, ActorContext actor, CancellationToken ct = default)
@@ -157,6 +163,24 @@ VALUES (@id, @code, 'Received', 1, @now);";
             foreach (var path in request.FilePaths)
             {
                 if (!File.Exists(path)) continue;
+
+                // Validate signature
+                try
+                {
+                    byte[] header = new byte[8];
+                    using (var fs = File.OpenRead(path))
+                    {
+                        int read = fs.Read(header, 0, header.Length);
+                        if (read >= 4)
+                        {
+                            BusinessRuleValidator.ValidateFileSignature(header, Path.GetExtension(path));
+                        }
+                    }
+                }
+                catch (DomainValidationException ex)
+                {
+                    return OperationResult<ImportBatchResult>.Fail(ex.ErrorCode, ex.Message, actor.CorrelationId);
+                }
 
                 var fileObj = await _fileStore.StoreFileAsync(path, ct);
 
@@ -211,6 +235,7 @@ VALUES (@id, @dossierId, @hash, @name, @sourceKind, @sourceRef, 'Imported', @cre
                 ));
             }
 
+            await _auditLogger.LogAsync(conn, tx, actor, "ImportDocuments", "Dossier", dossierId, null, "Success", ct);
             await tx.CommitAsync(ct);
 
             return OperationResult<ImportBatchResult>.Ok(new ImportBatchResult(
@@ -236,12 +261,14 @@ VALUES (@id, @dossierId, @hash, @name, @sourceKind, @sourceRef, 'Imported', @cre
         private readonly SqliteDatabaseContext _dbContext;
         private readonly IFileStore _fileStore;
         private readonly IDocumentTextExtractor _textExtractor;
+        private readonly IAuditLogger _auditLogger;
 
-        public TextService(SqliteDatabaseContext dbContext, IFileStore fileStore, IDocumentTextExtractor textExtractor)
+        public TextService(SqliteDatabaseContext dbContext, IFileStore fileStore, IDocumentTextExtractor textExtractor, IAuditLogger? auditLogger = null)
         {
             _dbContext = dbContext;
             _fileStore = fileStore;
             _textExtractor = textExtractor;
+            _auditLogger = auditLogger ?? new AuditLogger();
         }
 
         public async Task<OperationResult<TextRevisionResult>> ExtractAsync(ExtractRequest request, ActorContext actor, CancellationToken ct = default)
@@ -326,6 +353,22 @@ VALUES (@docId, @revId, @blockId, @raw, @search);";
             cmdUpdate.Parameters.AddWithValue("@id", request.DocumentId);
             await cmdUpdate.ExecuteNonQueryAsync(ct);
 
+            // BR-32: Mark any ReportRevision referencing old revisions as stale
+            using var cmdStale = conn.CreateCommand();
+            cmdStale.Transaction = tx;
+            cmdStale.CommandText = @"
+UPDATE ReportRevision 
+SET isStale = 1 
+WHERE id IN (
+    SELECT reportRevisionId FROM ReportSource WHERE sourceRevisionId IN (
+        SELECT id FROM TextRevision WHERE documentId = @docId AND id <> @newRevId
+    )
+);";
+            cmdStale.Parameters.AddWithValue("@docId", request.DocumentId);
+            cmdStale.Parameters.AddWithValue("@newRevId", revisionId);
+            await cmdStale.ExecuteNonQueryAsync(ct);
+
+            await _auditLogger.LogAsync(conn, tx, actor, "ExtractText", "Document", request.DocumentId, revisionId, "Success", ct);
             await tx.CommitAsync(ct);
 
             return OperationResult<TextRevisionResult>.Ok(new TextRevisionResult(
@@ -376,6 +419,7 @@ WHERE id=@id;";
                 await cmdB.ExecuteNonQueryAsync(ct);
             }
 
+            await _auditLogger.LogAsync(conn, tx, actor, "ReviewText", "TextRevision", request.ExpectedRevisionId, null, "Success", ct);
             await tx.CommitAsync(ct);
 
             return OperationResult<TextRevisionResult>.Ok(new TextRevisionResult(
@@ -388,10 +432,12 @@ WHERE id=@id;";
     public class MetadataService : IMetadataService
     {
         private readonly SqliteDatabaseContext _dbContext;
+        private readonly IAuditLogger _auditLogger;
 
-        public MetadataService(SqliteDatabaseContext dbContext)
+        public MetadataService(SqliteDatabaseContext dbContext, IAuditLogger? auditLogger = null)
         {
             _dbContext = dbContext;
+            _auditLogger = auditLogger ?? new AuditLogger();
         }
 
         public async Task<OperationResult<MetadataResult>> SaveMetadataAsync(MetadataRequest request, ActorContext actor, CancellationToken ct = default)
@@ -427,6 +473,7 @@ VALUES (@id, @dossierId, @fieldKey, @ver, @val, @status, @evId, @sid, @created);
             cmd.Parameters.AddWithValue("@created", meta.CreatedUtc);
 
             await cmd.ExecuteNonQueryAsync(ct);
+            await _auditLogger.LogAsync(conn, null, actor, "SaveMetadata", "MetadataVersion", meta.Id, null, "Success", ct);
 
             return OperationResult<MetadataResult>.Ok(new MetadataResult(
                 meta.DossierId, meta.FieldKey, meta.VersionNo, meta.Status, meta.ValueJson ?? "{}"
@@ -450,6 +497,7 @@ VALUES (@id, @dossierId, 1, @json, @milestone, @evId, @sid, @created);";
             cmd.Parameters.AddWithValue("@created", DateTime.UtcNow.ToString("o"));
 
             await cmd.ExecuteNonQueryAsync(ct);
+            await _auditLogger.LogAsync(conn, null, actor, "ClassifyDossier", "ClassificationRecord", recordId, null, "Success", ct);
 
             return OperationResult<string>.Ok(recordId, actor.CorrelationId);
         }

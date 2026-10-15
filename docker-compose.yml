@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  sacd-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sacd-engine:latest
+    container_name: sacd-core-worker
+    restart: unless-stopped
+    volumes:
+      - ./docker_data:/data/sacd_workspace
+    environment:
+      - SACD_WORKSPACE=/data/sacd_workspace
+      - TZ=Asia/Ho_Chi_Minh
+    command: ["/data/sacd_workspace"]

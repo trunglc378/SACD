@@ -25,3 +25,7 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 .DS_Store
+
+## Build outputs & Docker data
+dist/
+docker_data/

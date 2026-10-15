@@ -1,0 +1,9 @@
+**/.git
+**/.vs
+**/bin
+**/obj
+**/dist
+**/*.pdb
+**/*.user
+docs/
+workspace_data/

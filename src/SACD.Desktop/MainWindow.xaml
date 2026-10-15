@@ -1,0 +1,259 @@
+<Window x:Class="SACD.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:SACD.Desktop.ViewModels"
+        mc:Ignorable="d"
+        Title="SACD — Software for Automatically Compiling Documents" Height="780" Width="1180"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F7FA">
+
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="#1E88E5"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style TargetType="TabItem">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="14,10"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#0D47A1" Padding="18,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Vertical">
+                    <TextBlock Text="SACD — TỰ ĐỘNG HÓA QUY TRÌNH XỬ LÝ VĂN BẢN VÀ TỔNG HỢP TÀI LIỆU" 
+                               FontSize="17" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="Phần mềm Desktop cách ly độc lập | Hỗ trợ QLVB, RPA có điểm dừng &amp; Kiểm chứng số liệu" 
+                               FontSize="12" Foreground="#BBDEFB" Margin="0,3,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="#1565C0" CornerRadius="4" Padding="10,4" Margin="4,0">
+                        <TextBlock Text="{Binding MachineProfile, StringFormat='Profile: {0}'}" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Workspace Tabs -->
+        <TabControl Grid.Row="1" Margin="10">
+            
+            <!-- Tab 1: Workspace -->
+            <TabItem Header="1. Không gian làm việc">
+                <Grid Margin="15">
+                    <StackPanel MaxWidth="800" HorizontalAlignment="Left">
+                        <TextBlock Text="Cấu hình Không gian làm việc cục bộ (Workspace)" FontSize="16" FontWeight="Bold" Margin="0,0,0,15" Foreground="#0D47A1"/>
+                        <TextBlock Text="Đường dẫn lưu trữ CSDL SQLite và kho đối tượng tệp gốc (objects):" FontWeight="SemiBold" Margin="0,5"/>
+                        <TextBox Text="{Binding WorkspacePath, UpdateSourceTrigger=PropertyChanged}" Padding="8" FontSize="13"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
+                            <Button Content="Mở / Khởi tạo Kho làm việc" Command="{Binding OpenWorkspaceCommand}" Background="#2E7D32"/>
+                            <Button Content="Tạo sao lưu Snapshot (Zip)" Command="{Binding BackupWorkspaceCommand}" Background="#455A64"/>
+                        </StackPanel>
+                        <Border Background="#E3F2FD" CornerRadius="4" Padding="15" Margin="0,20,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Thông tin kiểm soát an toàn:" FontWeight="Bold" Foreground="#0D47A1"/>
+                                <TextBlock Text="• BR-01: Mỗi kho chỉ cho phép 1 phiên ghi độc quyền; ngăn chặn hai tiến trình ghi đồng thời." Margin="0,4"/>
+                                <TextBlock Text="• BR-02: Toàn vẹn 50 bảng nghiệp vụ CSDL SQLite với PRAGMA foreign_keys=ON và FTS5." Margin="0,4"/>
+                                <TextBlock Text="• Cách ly Air-gap: Hoạt động hoàn toàn trên máy nội bộ; không gửi dữ liệu ra mạng ngoài." Margin="0,4"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 2: Intake & Review -->
+            <TabItem Header="2. Tiếp nhận &amp; Đối chiếu text">
+                <Grid Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left: Document List -->
+                    <Border Grid.Column="0" Margin="0,0,5,0" Background="White" CornerRadius="4" Padding="10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                                <Button Content="Tiếp nhận văn bản mẫu" Command="{Binding ImportFilesCommand}"/>
+                                <TextBlock Text="Danh sách tệp gốc đã nhập:" VerticalAlignment="Center" FontWeight="Bold" Margin="10,0"/>
+                            </StackPanel>
+                            <DataGrid Grid.Row="1" ItemsSource="{Binding ImportedDocuments}" SelectedItem="{Binding SelectedDocument}"
+                                      AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Tên văn bản" Binding="{Binding OriginalPath}" Width="*"/>
+                                    <DataGridTextColumn Header="Dung lượng (Bytes)" Binding="{Binding SizeBytes}" Width="120"/>
+                                    <DataGridTextColumn Header="Trùng lặp" Binding="{Binding Deduplicated}" Width="80"/>
+                                    <DataGridTextColumn Header="Mã tệp SHA256" Binding="{Binding ObjectHash}" Width="150"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </Border>
+
+                    <!-- Right: Text Blocks Review -->
+                    <Border Grid.Column="1" Margin="5,0,0,0" Background="White" CornerRadius="4" Padding="10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="Các đoạn văn bản đã trích xuất &amp; đối chiếu:" FontWeight="Bold" Margin="0,0,0,10"/>
+                            <DataGrid Grid.Row="1" ItemsSource="{Binding DocumentTextBlocks}" AutoGenerateColumns="False" GridLinesVisibility="All">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="STT" Binding="{Binding Ordinal}" Width="50" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Vị trí nguồn" Binding="{Binding LocatorJson}" Width="130" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Nội dung đã chuẩn hóa NFC" Binding="{Binding RawTextNfc}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                                <Button Content="Xác nhận đối chiếu [Reviewed]" Command="{Binding ReviewTextCommand}" Background="#2E7D32"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 3: Deadlines & Tasks -->
+            <TabItem Header="3. Hạn xử lý &amp; Nhiệm vụ">
+                <Grid Margin="10" Background="White">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10">
+                        <Button Content="+ Tạo nhiệm vụ mới" Command="{Binding CreateTaskCommand}"/>
+                        <Button Content="Đánh dấu hoàn thành" Command="{Binding CompleteTaskCommand}" Background="#00897B"/>
+                        <TextBlock Text="Theo dõi hạn xử lý theo BR-17, BR-18, BR-19 (Còn hạn, Sắp hết hạn, Quá hạn):" VerticalAlignment="Center" FontWeight="Bold" Margin="15,0,0,0"/>
+                    </StackPanel>
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding TasksList}" SelectedItem="{Binding SelectedTask}"
+                              AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal" Margin="10">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Hồ sơ" Binding="{Binding DossierCode}" Width="130"/>
+                            <DataGridTextColumn Header="Nội dung công việc" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="Cán bộ phụ trách" Binding="{Binding AssigneeName}" Width="150"/>
+                            <DataGridTextColumn Header="Hạn xử lý" Binding="{Binding DueDate}" Width="110"/>
+                            <DataGridTextColumn Header="Tình trạng hạn" Binding="{Binding DeadlineText}" Width="180">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="Trạng thái" Binding="{Binding State}" Width="100"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 4: Search & Audit -->
+            <TabItem Header="4. Tra cứu FTS5 &amp; Nhật ký">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Background="White" Padding="10" CornerRadius="4" Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}" Padding="8" FontSize="13"/>
+                            <Button Grid.Column="1" Content="Tìm kiếm toàn văn FTS5" Command="{Binding SearchCommand}" Margin="10,0,0,0"/>
+                        </Grid>
+                    </Border>
+                    <Border Grid.Row="1" Background="White" Padding="10" CornerRadius="4">
+                        <DataGrid ItemsSource="{Binding SearchResults}" AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Hồ sơ" Binding="{Binding DossierCode}" Width="120"/>
+                                <DataGridTextColumn Header="Tệp nguồn" Binding="{Binding DocumentName}" Width="200"/>
+                                <DataGridTextColumn Header="Đoạn trích kết quả khớp" Binding="{Binding Snippet}" Width="*"/>
+                                <DataGridTextColumn Header="Phiên bản text" Binding="{Binding VersionNo}" Width="100"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 5: Word Report Studio -->
+            <TabItem Header="5. Báo cáo Word (OpenXML)">
+                <Grid Margin="15" Background="White">
+                    <StackPanel MaxWidth="800" HorizontalAlignment="Left" Margin="10">
+                        <TextBlock Text="Biên tập và Xuất Báo cáo tổng hợp Word (.docx)" FontSize="16" FontWeight="Bold" Foreground="#0D47A1" Margin="0,0,0,15"/>
+                        <TextBlock Text="Tiêu đề báo cáo:" FontWeight="SemiBold" Margin="0,5"/>
+                        <TextBox Text="{Binding ReportTitle, UpdateSourceTrigger=PropertyChanged}" Padding="8" FontSize="13"/>
+
+                        <TextBlock Text="Thư mục xuất tệp Word:" FontWeight="SemiBold" Margin="0,15,0,5"/>
+                        <TextBox Text="{Binding ReportExportPath, UpdateSourceTrigger=PropertyChanged}" Padding="8" FontSize="13"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                            <Button Content="Xuất Báo cáo [Bản Nháp / Draft]" Command="{Binding ExportDraftReportCommand}" Background="#E65100"/>
+                            <Button Content="Xuất Báo cáo [Bản Trình Lãnh đạo]" Command="{Binding ExportSubmissionReportCommand}" Background="#2E7D32"/>
+                        </StackPanel>
+
+                        <Border Background="#F1F8E9" CornerRadius="4" Padding="15" Margin="0,25,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Trạng thái xuất gần nhất:" FontWeight="Bold" Foreground="#1B5E20"/>
+                                <TextBlock Text="{Binding LastExportStatus}" Margin="0,5" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 6: RPA Studio -->
+            <TabItem Header="6. Tự động hóa QLVB (RPA)">
+                <Grid Margin="15" Background="White">
+                    <StackPanel MaxWidth="800" HorizontalAlignment="Left" Margin="10">
+                        <TextBlock Text="Thực thi Kịch bản Tự động hóa Giao diện QLVB" FontSize="16" FontWeight="Bold" Foreground="#0D47A1" Margin="0,0,0,15"/>
+                        <TextBlock Text="Kịch bản mẫu được cấp quyền: 'Tự động điền số văn bản, trích yếu và thời hạn vào phần mềm QLVB'." Margin="0,5"/>
+                        <Button Content="Chạy Kịch bản có kiểm soát (với điểm dừng PauseForUser)" Command="{Binding RunRpaMacroCommand}" Margin="0,15,0,0" Width="400" HorizontalAlignment="Left"/>
+
+                        <Border Background="#FFF3E0" CornerRadius="4" Padding="15" Margin="0,25,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Nguyên tắc an toàn RPA (BR-20, BR-21):" FontWeight="Bold" Foreground="#E65100"/>
+                                <TextBlock Text="• Trạng thái Prepared -> Dispatched -> Verified hoặc NeedsReconciliation." Margin="0,4"/>
+                                <TextBlock Text="• Có điểm dừng PauseForUser để cán bộ kiểm tra trước khi thực hiện thao tác lưu." Margin="0,4"/>
+                                <TextBlock Text="• Không tự ý thử lại (retry) khi chưa biết kết quả của lần thao tác trước." Margin="0,4"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="#ECEFF1" Padding="15,6" BorderBrush="#CFD8DC" BorderThickness="0,1,0,0">
+            <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="#37474F" FontWeight="SemiBold"/>
+        </Border>
+    </Grid>
+</Window>

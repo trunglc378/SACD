@@ -20,7 +20,7 @@ using SACD.Infrastructure.Word;
 
 namespace SACD.Desktop.ViewModels
 {
-    public class MainViewModel : ViewModelBase
+    public class MainViewModel : ViewModelBase, IDisposable
     {
         private SqliteDatabaseContext _dbContext = null!;
         private IFileStore _fileStore = null!;
@@ -39,9 +39,17 @@ namespace SACD.Desktop.ViewModels
         private IOperationsService _operationsService = null!;
 
         private ActorContext _actor = null!;
+        private string? _selectedRevisionId;
+        private CorrespondenceViewModel? _caseDesk;
+        public CorrespondenceViewModel? CaseDesk { get=>_caseDesk; private set=>SetProperty(ref _caseDesk,value); }
+        public string SelectedMachineProfile { get; set; } = "Intake";
+        public string[] MachineProfiles { get; } = { "Intake", "Management" };
+        private int _selectedTabIndex;
+        public int SelectedTabIndex {get=>_selectedTabIndex;set=>SetProperty(ref _selectedTabIndex,value);}
 
         // Workspace Props
-        private string _workspacePath = @"E:\Project\SACD\workspace_data";
+        private string _workspacePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SACD", "workspace_data");
         private string _statusMessage = "Sẵn sàng khởi động.";
         private string _machineProfile = "Intake";
         private bool _isWorkspaceOpen;
@@ -82,7 +90,8 @@ namespace SACD.Desktop.ViewModels
 
         // Report Fields
         private string _reportTitle = "Báo cáo tổng hợp tình hình văn bản tháng 10/2026";
-        private string _reportExportPath = @"E:\Project\SACD\exports";
+        private string _reportExportPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SACD", "exports");
         private string _lastExportStatus = "";
         public string ReportTitle { get => _reportTitle; set => SetProperty(ref _reportTitle, value); }
         public string ReportExportPath { get => _reportExportPath; set => SetProperty(ref _reportExportPath, value); }
@@ -113,14 +122,13 @@ namespace SACD.Desktop.ViewModels
             RunRpaMacroCommand = new RelayCommand(async () => await RunRpaMacroAsync(), () => IsWorkspaceOpen);
             BackupWorkspaceCommand = new RelayCommand(async () => await BackupWorkspaceAsync(), () => IsWorkspaceOpen);
 
-            InitializeServices(WorkspacePath);
         }
 
         private void InitializeServices(string path)
         {
             _dbContext = new SqliteDatabaseContext(path);
             _fileStore = new LocalFileStore(path);
-            _actor = ActorContext.Create(Environment.UserName, "ws-desktop-01");
+            _actor = ActorContext.Create(System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value ?? Environment.UserName, "ws-desktop-01");
 
             _workspaceService = new WorkspaceService(_dbContext);
             _intakeService = new IntakeService(_dbContext, _fileStore);
@@ -142,13 +150,27 @@ namespace SACD.Desktop.ViewModels
             try
             {
                 StatusMessage = "Đang mở không gian làm việc...";
+                CaseDesk?.Dispose();
+                CaseDesk = null;
+                SelectedDocument = null;
+                _selectedRevisionId = null;
+                ImportedDocuments.Clear();
+                DocumentTextBlocks.Clear();
+                TasksList.Clear();
+                SearchResults.Clear();
+                SelectedTask = null;
+                _dbContext?.Dispose();
+                IsWorkspaceOpen = false;
                 InitializeServices(WorkspacePath);
 
-                var res = await _workspaceService.OpenAsync(new WorkspaceOpenRequest(WorkspacePath, "Standard", 1), _actor);
+                var res = await _workspaceService.OpenAsync(new WorkspaceOpenRequest(WorkspacePath, SelectedMachineProfile, 1), _actor);
                 if (res.Success)
                 {
                     IsWorkspaceOpen = true;
                     MachineProfile = res.Value!.MachineProfile;
+                    _actor = ActorContext.Create(System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value ?? Environment.UserName, res.Value.WorkspaceId);
+                    CaseDesk = new CorrespondenceViewModel(_dbContext!,_actor,MachineProfile);
+                    SelectedTabIndex = 1;
                     StatusMessage = $"Đã mở kho: {res.Value.WorkspaceId} (SID: {_actor.WindowsSid}, Mode: {MachineProfile})";
                     await RefreshDataAsync();
                 }
@@ -233,14 +255,23 @@ namespace SACD.Desktop.ViewModels
             try
             {
                 DocumentTextBlocks.Clear();
-                var res = await _textService.ExtractAsync(new ExtractRequest(documentId, "BuiltIn"), _actor);
-                if (res.Success && res.Value != null)
-                {
-                    foreach (var b in res.Value.Blocks)
-                    {
-                        DocumentTextBlocks.Add(b);
-                    }
-                }
+                _selectedRevisionId = null;
+                using var conn = _dbContext.CreateConnection();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT currentRevisionId FROM Document WHERE id=@id;";
+                cmd.Parameters.AddWithValue("@id", documentId);
+                var revision = await cmd.ExecuteScalarAsync();
+                if (revision is not string revisionId) return;
+                using var blocks = conn.CreateCommand();
+                blocks.CommandText = "SELECT id,ordinal,locatorJson,extractedText,rawTextNfc,reviewed FROM TextBlock WHERE revisionId=@id ORDER BY ordinal;";
+                blocks.Parameters.AddWithValue("@id", revisionId);
+                using var reader = await blocks.ExecuteReaderAsync();
+                var loaded = new System.Collections.Generic.List<TextBlockDto>();
+                while (await reader.ReadAsync())
+                    loaded.Add(new TextBlockDto(reader.GetString(0),reader.GetInt32(1),reader.GetString(2),reader.GetString(3),reader.GetString(4),reader.GetInt32(5)));
+                if (SelectedDocument?.DocumentId != documentId) return;
+                _selectedRevisionId = revisionId;
+                foreach (var block in loaded) DocumentTextBlocks.Add(block);
             }
             catch (Exception ex)
             {
@@ -250,13 +281,13 @@ namespace SACD.Desktop.ViewModels
 
         private async Task ReviewTextAsync()
         {
-            if (SelectedDocument == null) return;
+            if (SelectedDocument == null || _selectedRevisionId == null) return;
             try
             {
                 StatusMessage = "Đang xác nhận đối chiếu nội dung...";
                 var res = await _textService.SaveReviewAsync(new TextReviewRequest(
                     SelectedDocument.DocumentId,
-                    SelectedDocument.DocumentId, // using expected revision
+                    _selectedRevisionId,
                     DocumentTextBlocks.ToList(),
                     new[] { 1 },
                     "Đã kiểm tra đối chiếu văn bản đầy đủ"
@@ -281,7 +312,12 @@ namespace SACD.Desktop.ViewModels
         {
             try
             {
-                string dosId = ImportedDocuments.FirstOrDefault()?.DocumentId ?? Guid.NewGuid().ToString("N");
+                if (SelectedDocument == null) { StatusMessage = "Chọn văn bản đã tiếp nhận trước khi tạo nhiệm vụ."; return; }
+                using var conn = _dbContext.CreateConnection();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT dossierId FROM Document WHERE id=@id;";
+                cmd.Parameters.AddWithValue("@id", SelectedDocument.DocumentId);
+                string dosId = (string)(await cmd.ExecuteScalarAsync())!;
                 var res = await _workflowService.SaveTaskAsync(new TaskRequest(
                     DossierId: dosId,
                     TaskId: null,
@@ -360,6 +396,11 @@ namespace SACD.Desktop.ViewModels
         {
             try
             {
+                if (mode == "Submission")
+                {
+                    StatusMessage = "Bản trình cần rà soát nguồn và nhận định. Giao diện này chỉ xuất bản nháp; phiếu trình văn bản nằm ở tab Quy trình văn thư.";
+                    return;
+                }
                 Directory.CreateDirectory(ReportExportPath);
                 StatusMessage = $"Đang xuất báo cáo dạng {mode} bằng OpenXML...";
 
@@ -446,7 +487,7 @@ namespace SACD.Desktop.ViewModels
 
                     if (runRes.Success && runRes.Value != null)
                     {
-                        StatusMessage = $"Kịch bản hoàn tất: Trạng thái {runRes.Value.State} (Bước {runRes.Value.CurrentStep}).";
+                        StatusMessage = $"RPA mô phỏng: {runRes.Value.State} (Bước {runRes.Value.CurrentStep}). Không thao tác QLVB thật; chức năng điền thật nằm trong Quy trình văn thư.";
                     }
                 }
             }
@@ -460,7 +501,7 @@ namespace SACD.Desktop.ViewModels
         {
             try
             {
-                string backupDir = Path.Combine(WorkspacePath, "backups");
+                string backupDir = Path.GetFullPath(WorkspacePath).TrimEnd(Path.DirectorySeparatorChar) + ".backups";
                 StatusMessage = "Đang tạo bản sao lưu snapshot kho...";
                 var res = await _operationsService.BackupAsync(new BackupRequest(backupDir, "Sao lưu định kỳ"), _actor);
                 if (res.Success && res.Value != null)
@@ -473,6 +514,12 @@ namespace SACD.Desktop.ViewModels
             {
                 StatusMessage = $"Lỗi sao lưu: {ex.Message}";
             }
+        }
+
+        public void Dispose()
+        {
+            CaseDesk?.Dispose();
+            _dbContext?.Dispose();
         }
     }
 }

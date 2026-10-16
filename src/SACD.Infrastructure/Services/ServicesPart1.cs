@@ -67,7 +67,8 @@ namespace SACD.Infrastructure.Services
             }
 
             // If empty, auto-initialize
-            var initRes = await InitializeNewAsync(_dbContext.WorkspaceDirectory, "Intake", actor, ct);
+            var initRes = await InitializeNewAsync(_dbContext.WorkspaceDirectory,
+                request.Mode is "Intake" or "Management" or "Test" ? request.Mode : "Intake", actor, ct);
             return initRes;
         }
 
@@ -298,7 +299,12 @@ VALUES (@id, @dossierId, @hash, @name, @sourceKind, @sourceRef, 'Imported', @cre
             cmdVer.Parameters.AddWithValue("@id", request.DocumentId);
             versionNo = Convert.ToInt32(await cmdVer.ExecuteScalarAsync(ct));
 
-            var blocks = await _textExtractor.ExtractBlocksAsync(physicalPath, revisionId, ct);
+            using var cmdName = conn.CreateCommand();
+            cmdName.Transaction = tx;
+            cmdName.CommandText = "SELECT originalName FROM Document WHERE id=@id;";
+            cmdName.Parameters.AddWithValue("@id", request.DocumentId);
+            string originalName = (string)(await cmdName.ExecuteScalarAsync(ct))!;
+            var blocks = await _textExtractor.ExtractBlocksAsync(physicalPath, revisionId, ct, Path.GetExtension(originalName));
 
             // Insert TextRevision
             using var cmdRev = conn.CreateCommand();
@@ -389,6 +395,22 @@ WHERE id IN (
 
             string nowUtc = DateTime.UtcNow.ToString("o");
 
+            using var current = conn.CreateCommand();
+            current.Transaction = tx;
+            current.CommandText = "SELECT currentRevisionId FROM Document WHERE id=@id;";
+            current.Parameters.AddWithValue("@id", request.DocumentId);
+            if ((await current.ExecuteScalarAsync(ct)) as string != request.ExpectedRevisionId)
+                return OperationResult<TextRevisionResult>.Fail(ErrorCodes.RevisionConflict, "Nội dung đã có phiên bản mới. Hãy tải lại văn bản.", actor.CorrelationId);
+            using var countBlocks = conn.CreateCommand();
+            countBlocks.Transaction = tx;
+            countBlocks.CommandText = "SELECT id FROM TextBlock WHERE revisionId=@id;";
+            countBlocks.Parameters.AddWithValue("@id", request.ExpectedRevisionId);
+            var expectedBlocks = new HashSet<string>();
+            using (var r = await countBlocks.ExecuteReaderAsync(ct))
+                while (await r.ReadAsync(ct)) expectedBlocks.Add(r.GetString(0));
+            if (!expectedBlocks.SetEquals(request.EditedBlocks.Select(b => b.Id)) || request.EditedBlocks.Count != expectedBlocks.Count)
+                return OperationResult<TextRevisionResult>.Fail(ErrorCodes.InvalidEvidence, "Phải đối chiếu đầy đủ các đoạn của đúng phiên bản.", actor.CorrelationId);
+
             using var cmd = conn.CreateCommand();
             cmd.Transaction = tx;
             cmd.CommandText = @"
@@ -412,11 +434,22 @@ WHERE id=@id;";
                 cmdB.Transaction = tx;
                 cmdB.CommandText = @"
 UPDATE TextBlock 
-SET rawTextNfc=@raw, reviewed=1 
-WHERE id=@id;";
-                cmdB.Parameters.AddWithValue("@raw", b.RawTextNfc);
+SET rawTextNfc=@raw, searchText=@search, reviewed=1
+WHERE id=@id AND revisionId=@rev;";
+                cmdB.Parameters.AddWithValue("@rev", request.ExpectedRevisionId);
+                string nfc = VietnameseTextNormalizer.NormalizeToNfc(b.RawTextNfc);
+                cmdB.Parameters.AddWithValue("@raw", nfc);
+                cmdB.Parameters.AddWithValue("@search", VietnameseTextNormalizer.PrepareSearchText(nfc));
                 cmdB.Parameters.AddWithValue("@id", b.Id);
                 await cmdB.ExecuteNonQueryAsync(ct);
+                using var fts = conn.CreateCommand();
+                fts.Transaction = tx;
+                fts.CommandText = "UPDATE TextSearch SET rawTextNfc=@raw, searchText=@search WHERE blockId=@id AND revisionId=@rev;";
+                fts.Parameters.AddWithValue("@raw", nfc);
+                fts.Parameters.AddWithValue("@search", VietnameseTextNormalizer.PrepareSearchText(nfc));
+                fts.Parameters.AddWithValue("@id", b.Id);
+                fts.Parameters.AddWithValue("@rev", request.ExpectedRevisionId);
+                await fts.ExecuteNonQueryAsync(ct);
             }
 
             await _auditLogger.LogAsync(conn, tx, actor, "ReviewText", "TextRevision", request.ExpectedRevisionId, null, "Success", ct);

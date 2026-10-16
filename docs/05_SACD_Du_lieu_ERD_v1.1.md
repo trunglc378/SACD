@@ -1,5 +1,7 @@
 # SACD Mô hình dữ liệu ERD và từ điển dữ liệu
 
+> Mở rộng additive 16/10/2026: thêm `CorrespondenceCase(id PK, documentId UNIQUE FK Document, payloadJson, rowVersion)`, `CorrespondenceCaseEvent(id PK, caseId FK, action, actor, atUtc, note)` và `CorrespondenceCaseImport(originWorkspaceId + originCaseId PK, originVersion, contentHash, localCaseId FK)`. Tổng hiện thực là 53 bảng nghiệp vụ, chưa tính FTS/shadow; schemaVersion vẫn là 1. JSON hồ sơ giữ metadata, trạng thái, căn cứ quyết định/ký nhận và thời điểm hoàn thành. StateLabel/DeadlineLabel chỉ là projection giao diện, không ghi vào gói/hash. Cùng nguồn/hồ sơ khác hash bị chặn để đối soát; không ghi đè tiến trình Máy 2. Xem [quy trình v1.2](08_SACD_Quy_trinh_hop_nhat_v1.2.md).
+
 **Mã tài liệu:** SACD-DOC-05  
 **Phiên bản:** 1.1  
 **Ngày:** 15/10/2026  

@@ -64,17 +64,17 @@ namespace SACD.Infrastructure.Text
 
     public interface IDocumentTextExtractor
     {
-        Task<IReadOnlyList<TextBlockEntity>> ExtractBlocksAsync(string filePath, string revisionId, CancellationToken ct = default);
+        Task<IReadOnlyList<TextBlockEntity>> ExtractBlocksAsync(string filePath, string revisionId, CancellationToken ct = default, string? originalExtension = null);
     }
 
     public class DocumentTextExtractor : IDocumentTextExtractor
     {
-        public async Task<IReadOnlyList<TextBlockEntity>> ExtractBlocksAsync(string filePath, string revisionId, CancellationToken ct = default)
+        public async Task<IReadOnlyList<TextBlockEntity>> ExtractBlocksAsync(string filePath, string revisionId, CancellationToken ct = default, string? originalExtension = null)
         {
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("File to extract does not exist.", filePath);
 
-            string ext = Path.GetExtension(filePath).ToLowerInvariant();
+            string ext = (originalExtension ?? Path.GetExtension(filePath)).ToLowerInvariant();
             if (ext == ".docx")
             {
                 return ExtractFromDocx(filePath, revisionId);

@@ -1,5 +1,7 @@
 # SACD SRS đặc tả yêu cầu phần mềm
 
+> Cập nhật triển khai 16/10/2026: phạm vi hợp nhất Trợ lý văn thư + RPA tại [quy trình v1.2](08_SACD_Quy_trinh_hop_nhat_v1.2.md). Giữ bộ FR/NFR v1.1 làm mục tiêu thiết kế; không suy ra đã đạt toàn bộ từ việc build hoặc 23 test đạt. Email tự động, OCR scan/PDF, AI và mapping QLVB thực tế còn phụ thuộc. Luồng hiện thực có vai trò máy, xác nhận thủ công, gói USB, trình duyệt/giao/ký nhận tách biệt và theo dõi hạn.
+
 **Mã tài liệu:** SACD-DOC-02  
 **Phiên bản:** 1.1  
 **Ngày:** 15/10/2026  

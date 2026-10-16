@@ -1,0 +1,166 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="08efd006-9f2c-46a7-a087-faf24f8beb7f" name="Windows@LAPTOP-TRUNG 2026-10-16 10:38:18" runUser="LAPTOP-TRUNG\Windows" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-16T10:38:18.4809259+07:00" queuing="2026-10-16T10:38:18.4809261+07:00" start="2026-10-16T10:38:11.4440590+07:00" finish="2026-10-16T10:38:22.1719887+07:00" />
+  <TestSettings name="default" id="40582551-aac2-415d-a379-7f09bd0fc628">
+    <Deployment runDeploymentRoot="Windows_LAPTOP-TRUNG_2026-10-16_10_38_18" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="910ea7ed-9e1d-4269-8969-ee8ffd32b3ad" testId="da09e952-3f10-8b9d-a0e5-866472763395" testName="SACD.Tests.CorrespondenceWorkflowTests.Usb_ShouldRejectUnscannedAndTamperedPackages_AndDeduplicateReplay" computerName="LAPTOP-TRUNG" duration="00:00:00.4699580" startTime="2026-10-16T10:38:21.8244749+07:00" endTime="2026-10-16T10:38:21.8244752+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="910ea7ed-9e1d-4269-8969-ee8ffd32b3ad" />
+    <UnitTestResult executionId="a85bbe4c-80a3-408b-a422-226c51881ef0" testId="aa54c814-6383-845e-5638-81c3129013f7" testName="SACD.Tests.SacdFullTestSuite.UsbTransferManager_ShouldCreatePackageAndVerifyManifestIntegrity" computerName="LAPTOP-TRUNG" duration="00:00:00.0517789" startTime="2026-10-16T10:38:18.8197180+07:00" endTime="2026-10-16T10:38:18.8197183+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a85bbe4c-80a3-408b-a422-226c51881ef0" />
+    <UnitTestResult executionId="a7c14ea6-9ff7-4ad1-b66f-9670367caeea" testId="a21e9b18-fbd4-8e6f-e3dd-3294396a194f" testName="SACD.Tests.CorrespondenceWorkflowTests.DraftReportAndBackup_ShouldWorkOnFreshWorkspace_WithoutReadingWriterLock" computerName="LAPTOP-TRUNG" duration="00:00:00.3535141" startTime="2026-10-16T10:38:21.3543229+07:00" endTime="2026-10-16T10:38:21.3543236+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a7c14ea6-9ff7-4ad1-b66f-9670367caeea" />
+    <UnitTestResult executionId="d3713e2d-ac04-4cf1-b107-974fbe3d89ae" testId="cc2c4520-00eb-8648-fb20-b2368cf8784d" testName="SACD.Tests.CorrespondenceWorkflowTests.TwoMachines_ShouldPreserveMetadata_AndRequireApprovalAndReceiptBeforeCompletion" computerName="LAPTOP-TRUNG" duration="00:00:00.8736701" startTime="2026-10-16T10:38:20.7883599+07:00" endTime="2026-10-16T10:38:20.7883602+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d3713e2d-ac04-4cf1-b107-974fbe3d89ae" />
+    <UnitTestResult executionId="f022f264-7847-4e36-9d60-13dad147c633" testId="f4f15997-94e0-f8c6-e51d-9aed3c077ed6" testName="SACD.Tests.SacdFullTestSuite.WordReportGenerator_ShouldCreateOpenXmlDocxWithValidSha256" computerName="LAPTOP-TRUNG" duration="00:00:00.1582121" startTime="2026-10-16T10:38:18.9881277+07:00" endTime="2026-10-16T10:38:18.9881279+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f022f264-7847-4e36-9d60-13dad147c633" />
+    <UnitTestResult executionId="93625ee1-cdbe-45dd-ada7-79e8b2e5fb9b" testId="e8730e98-17e5-5ceb-fa61-3500cf7e06cc" testName="SACD.Tests.SacdFullTestSuite.FileStore_ShouldStoreFilesAndDeduplicateByHash" computerName="LAPTOP-TRUNG" duration="00:00:00.0372574" startTime="2026-10-16T10:38:18.5259097+07:00" endTime="2026-10-16T10:38:18.5259100+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="93625ee1-cdbe-45dd-ada7-79e8b2e5fb9b" />
+    <UnitTestResult executionId="15a8a717-d429-4801-a4e3-6646198f7711" testId="302d3ee0-3127-bb62-7698-939043fedcae" testName="SACD.Tests.SacdFullTestSuite.BusinessRules_ValidateFileSignature_ShouldValidateMagicBytesAccurately" computerName="LAPTOP-TRUNG" duration="00:00:00.0033832" startTime="2026-10-16T10:38:18.8297844+07:00" endTime="2026-10-16T10:38:18.8297848+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="15a8a717-d429-4801-a4e3-6646198f7711" />
+    <UnitTestResult executionId="03a6ecdf-2dc8-4c73-b425-ef2115152ac9" testId="3c066736-ad2b-f597-41f3-af8058584585" testName="SACD.Tests.CorrespondenceWorkflowTests.RepeatedReceive_ShouldReturnSameCase_AndReviewedMetadataCannotBeOverwritten" computerName="LAPTOP-TRUNG" duration="00:00:00.2621042" startTime="2026-10-16T10:38:19.5845508+07:00" endTime="2026-10-16T10:38:19.5845514+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="03a6ecdf-2dc8-4c73-b425-ef2115152ac9" />
+    <UnitTestResult executionId="aa7b9d4f-a746-4aab-8ca7-701b0394c9b7" testId="cbfe317a-b7aa-a08d-6473-206d5c326b10" testName="SACD.Tests.CorrespondenceWorkflowTests.PublishScript_ShouldIncreaseVersionOnRepeatedRuns_AndUseRealContentHash" computerName="LAPTOP-TRUNG" duration="00:00:00.2086865" startTime="2026-10-16T10:38:21.0005676+07:00" endTime="2026-10-16T10:38:21.0005678+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="aa7b9d4f-a746-4aab-8ca7-701b0394c9b7" />
+    <UnitTestResult executionId="99659261-875f-4e55-9fb7-6c9a4a166e56" testId="6d66347b-05ce-fd37-012d-0928b0439c89" testName="SACD.Tests.CorrespondenceWorkflowTests.TextReview_ShouldUseCurrentRevision_AndRejectForeignBlocksAndStaleRevision" computerName="LAPTOP-TRUNG" duration="00:00:00.3296127" startTime="2026-10-16T10:38:19.9143242+07:00" endTime="2026-10-16T10:38:19.9143251+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="99659261-875f-4e55-9fb7-6c9a4a166e56" />
+    <UnitTestResult executionId="56c8d7c9-67c0-4f33-aba7-c0998219d4ad" testId="9ffc9c40-6fe0-1239-79e5-2d702d3ff120" testName="SACD.Tests.CorrespondenceWorkflowTests.Cases_ShouldRejectWrongMachine_StaleEdits_AndOutOfOrderTransitions" computerName="LAPTOP-TRUNG" duration="00:00:00.5879914" startTime="2026-10-16T10:38:19.3221580+07:00" endTime="2026-10-16T10:38:19.3221584+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="56c8d7c9-67c0-4f33-aba7-c0998219d4ad" />
+    <UnitTestResult executionId="0124674c-dd2e-450f-8cec-270163de5f2a" testId="7db7f806-731d-c182-6a62-b0ed48b191fb" testName="SACD.Tests.SacdFullTestSuite.Database_ShouldInitializeAll50TablesAndEnforceForeignKeys" computerName="LAPTOP-TRUNG" duration="00:00:00.1896789" startTime="2026-10-16T10:38:17.5079111+07:00" endTime="2026-10-16T10:38:17.5079114+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0124674c-dd2e-450f-8cec-270163de5f2a" />
+    <UnitTestResult executionId="0e891f5e-fd2f-475e-a653-b69832120e2c" testId="0adda273-aad4-21fc-0cc7-aa9fbbac1d8f" testName="SACD.Tests.SacdFullTestSuite.Domain_ExactRatio_ShouldComputeExactDecimalsWithoutIntermediateRounding" computerName="LAPTOP-TRUNG" duration="00:00:00.0140998" startTime="2026-10-16T10:38:17.5213397+07:00" endTime="2026-10-16T10:38:17.5213399+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0e891f5e-fd2f-475e-a653-b69832120e2c" />
+    <UnitTestResult executionId="329b4d56-a76e-4437-875f-f7eb5fe89969" testId="ae4d4d40-d9d2-5f0f-3f1e-d52658e4882e" testName="SACD.Tests.CorrespondenceWorkflowTests.HashedDocx_ShouldExtractParagraphsUsingOriginalExtension" computerName="LAPTOP-TRUNG" duration="00:00:01.8467334" startTime="2026-10-16T10:38:18.7339323+07:00" endTime="2026-10-16T10:38:18.7339326+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="329b4d56-a76e-4437-875f-f7eb5fe89969" />
+    <UnitTestResult executionId="58845b59-805b-4be0-bacf-3aae24273f8a" testId="c1d67f5c-903a-703e-69e1-14cb3144b983" testName="SACD.Tests.SacdFullTestSuite.BusinessRules_ValidateEvidenceInterval_ShouldEnforceSurrogateAndQuoteHash" computerName="LAPTOP-TRUNG" duration="00:00:00.0062030" startTime="2026-10-16T10:38:18.8270783+07:00" endTime="2026-10-16T10:38:18.8270788+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="58845b59-805b-4be0-bacf-3aae24273f8a" />
+    <UnitTestResult executionId="285e1f32-ec15-471d-8914-991af209d31b" testId="534e2ad9-419a-9730-8b66-a642bf46910a" testName="SACD.Tests.SacdFullTestSuite.WorkflowService_RowVersionConflict_ShouldBeDetectedAndPreventOverwrites" computerName="LAPTOP-TRUNG" duration="00:00:00.2111015" startTime="2026-10-16T10:38:18.0458762+07:00" endTime="2026-10-16T10:38:18.0458764+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="285e1f32-ec15-471d-8914-991af209d31b" />
+    <UnitTestResult executionId="7465ac4b-fff6-479c-8ebd-c1472534b95b" testId="a592c9d8-39a7-733a-9e5b-42a1f03dd647" testName="SACD.Tests.CorrespondenceWorkflowTests.Completion_ShouldDistinguishLateAndOnTime_AndKeepUnknownDeadline" computerName="LAPTOP-TRUNG" duration="00:00:00.0031557" startTime="2026-10-16T10:38:20.7917070+07:00" endTime="2026-10-16T10:38:20.7917073+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7465ac4b-fff6-479c-8ebd-c1472534b95b" />
+    <UnitTestResult executionId="5e7e879e-5a7b-4906-8fbc-dbf16e4087cd" testId="3e49464c-f10e-6037-23f5-a6293542b78e" testName="SACD.Tests.SacdFullTestSuite.TransferService_ImportAsync_ShouldDetectConflictPerBr16" computerName="LAPTOP-TRUNG" duration="00:00:00.4420974" startTime="2026-10-16T10:38:18.4882107+07:00" endTime="2026-10-16T10:38:18.4882110+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5e7e879e-5a7b-4906-8fbc-dbf16e4087cd" />
+    <UnitTestResult executionId="26961649-73a1-4840-8f9d-ab9a337af49d" testId="f5df6919-2191-d1d1-5760-2c00c8c83de2" testName="SACD.Tests.SacdFullTestSuite.RpaEngine_ShouldExecuteStepsAndRespectPauseForUser" computerName="LAPTOP-TRUNG" duration="00:00:00.3021733" startTime="2026-10-16T10:38:17.8295523+07:00" endTime="2026-10-16T10:38:17.8295528+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="26961649-73a1-4840-8f9d-ab9a337af49d" />
+    <UnitTestResult executionId="e8384a5f-7e33-4ad0-b986-9529c996f9ee" testId="c6b6670c-206b-4f81-ca74-3a6df163d259" testName="SACD.Tests.SacdFullTestSuite.Domain_DeadlineCalculator_ShouldEvaluateUrgencyAccurately" computerName="LAPTOP-TRUNG" duration="00:00:00.0467500" startTime="2026-10-16T10:38:18.5727578+07:00" endTime="2026-10-16T10:38:18.5727583+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e8384a5f-7e33-4ad0-b986-9529c996f9ee" />
+    <UnitTestResult executionId="5bdecc58-abb9-40cb-a7d7-2a916a59eaf7" testId="260fb211-0add-8ac0-9981-fad1b2550220" testName="SACD.Tests.SacdFullTestSuite.ReportService_StaleInvalidation_ShouldPreventSubmissionExportPerBr30" computerName="LAPTOP-TRUNG" duration="00:00:00.4593384" startTime="2026-10-16T10:38:17.3179207+07:00" endTime="2026-10-16T10:38:17.3179916+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5bdecc58-abb9-40cb-a7d7-2a916a59eaf7" />
+    <UnitTestResult executionId="6c912ca3-55c6-4842-aa09-63a7229ec365" testId="dcafbf19-9176-4ee5-8c72-91e75949a5bf" testName="SACD.Tests.SacdFullTestSuite.FactService_AggregateAsync_ShouldSupportFlowStockAndRatioMetrics" computerName="LAPTOP-TRUNG" duration="00:00:00.3023080" startTime="2026-10-16T10:38:19.2906434+07:00" endTime="2026-10-16T10:38:19.2906439+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6c912ca3-55c6-4842-aa09-63a7229ec365" />
+    <UnitTestResult executionId="99b3fe30-2e41-4b03-b655-e83dcedd6edc" testId="01206984-e023-f1dd-6f9e-3e541fff68f9" testName="SACD.Tests.SacdFullTestSuite.Database_Fts5TextSearch_ShouldSupportVietnameseWithAndWithoutAccents" computerName="LAPTOP-TRUNG" duration="00:00:00.1947274" startTime="2026-10-16T10:38:18.7676922+07:00" endTime="2026-10-16T10:38:18.7676925+07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="99b3fe30-2e41-4b03-b655-e83dcedd6edc" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.ReportService_StaleInvalidation_ShouldPreventSubmissionExportPerBr30" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="260fb211-0add-8ac0-9981-fad1b2550220">
+      <Execution id="5bdecc58-abb9-40cb-a7d7-2a916a59eaf7" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="ReportService_StaleInvalidation_ShouldPreventSubmissionExportPerBr30" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.CorrespondenceWorkflowTests.Cases_ShouldRejectWrongMachine_StaleEdits_AndOutOfOrderTransitions" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="9ffc9c40-6fe0-1239-79e5-2d702d3ff120">
+      <Execution id="56c8d7c9-67c0-4f33-aba7-c0998219d4ad" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.CorrespondenceWorkflowTests" name="Cases_ShouldRejectWrongMachine_StaleEdits_AndOutOfOrderTransitions" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.Database_ShouldInitializeAll50TablesAndEnforceForeignKeys" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="7db7f806-731d-c182-6a62-b0ed48b191fb">
+      <Execution id="0124674c-dd2e-450f-8cec-270163de5f2a" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="Database_ShouldInitializeAll50TablesAndEnforceForeignKeys" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.CorrespondenceWorkflowTests.RepeatedReceive_ShouldReturnSameCase_AndReviewedMetadataCannotBeOverwritten" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="3c066736-ad2b-f597-41f3-af8058584585">
+      <Execution id="03a6ecdf-2dc8-4c73-b425-ef2115152ac9" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.CorrespondenceWorkflowTests" name="RepeatedReceive_ShouldReturnSameCase_AndReviewedMetadataCannotBeOverwritten" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.CorrespondenceWorkflowTests.TextReview_ShouldUseCurrentRevision_AndRejectForeignBlocksAndStaleRevision" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="6d66347b-05ce-fd37-012d-0928b0439c89">
+      <Execution id="99659261-875f-4e55-9fb7-6c9a4a166e56" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.CorrespondenceWorkflowTests" name="TextReview_ShouldUseCurrentRevision_AndRejectForeignBlocksAndStaleRevision" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.Domain_DeadlineCalculator_ShouldEvaluateUrgencyAccurately" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="c6b6670c-206b-4f81-ca74-3a6df163d259">
+      <Execution id="e8384a5f-7e33-4ad0-b986-9529c996f9ee" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="Domain_DeadlineCalculator_ShouldEvaluateUrgencyAccurately" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.WordReportGenerator_ShouldCreateOpenXmlDocxWithValidSha256" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="f4f15997-94e0-f8c6-e51d-9aed3c077ed6">
+      <Execution id="f022f264-7847-4e36-9d60-13dad147c633" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="WordReportGenerator_ShouldCreateOpenXmlDocxWithValidSha256" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.UsbTransferManager_ShouldCreatePackageAndVerifyManifestIntegrity" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="aa54c814-6383-845e-5638-81c3129013f7">
+      <Execution id="a85bbe4c-80a3-408b-a422-226c51881ef0" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="UsbTransferManager_ShouldCreatePackageAndVerifyManifestIntegrity" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.FileStore_ShouldStoreFilesAndDeduplicateByHash" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="e8730e98-17e5-5ceb-fa61-3500cf7e06cc">
+      <Execution id="93625ee1-cdbe-45dd-ada7-79e8b2e5fb9b" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="FileStore_ShouldStoreFilesAndDeduplicateByHash" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.RpaEngine_ShouldExecuteStepsAndRespectPauseForUser" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="f5df6919-2191-d1d1-5760-2c00c8c83de2">
+      <Execution id="26961649-73a1-4840-8f9d-ab9a337af49d" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="RpaEngine_ShouldExecuteStepsAndRespectPauseForUser" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.CorrespondenceWorkflowTests.HashedDocx_ShouldExtractParagraphsUsingOriginalExtension" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="ae4d4d40-d9d2-5f0f-3f1e-d52658e4882e">
+      <Execution id="329b4d56-a76e-4437-875f-f7eb5fe89969" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.CorrespondenceWorkflowTests" name="HashedDocx_ShouldExtractParagraphsUsingOriginalExtension" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.CorrespondenceWorkflowTests.Usb_ShouldRejectUnscannedAndTamperedPackages_AndDeduplicateReplay" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="da09e952-3f10-8b9d-a0e5-866472763395">
+      <Execution id="910ea7ed-9e1d-4269-8969-ee8ffd32b3ad" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.CorrespondenceWorkflowTests" name="Usb_ShouldRejectUnscannedAndTamperedPackages_AndDeduplicateReplay" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.FactService_AggregateAsync_ShouldSupportFlowStockAndRatioMetrics" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="dcafbf19-9176-4ee5-8c72-91e75949a5bf">
+      <Execution id="6c912ca3-55c6-4842-aa09-63a7229ec365" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="FactService_AggregateAsync_ShouldSupportFlowStockAndRatioMetrics" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.TransferService_ImportAsync_ShouldDetectConflictPerBr16" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="3e49464c-f10e-6037-23f5-a6293542b78e">
+      <Execution id="5e7e879e-5a7b-4906-8fbc-dbf16e4087cd" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="TransferService_ImportAsync_ShouldDetectConflictPerBr16" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.CorrespondenceWorkflowTests.PublishScript_ShouldIncreaseVersionOnRepeatedRuns_AndUseRealContentHash" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="cbfe317a-b7aa-a08d-6473-206d5c326b10">
+      <Execution id="aa7b9d4f-a746-4aab-8ca7-701b0394c9b7" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.CorrespondenceWorkflowTests" name="PublishScript_ShouldIncreaseVersionOnRepeatedRuns_AndUseRealContentHash" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.Database_Fts5TextSearch_ShouldSupportVietnameseWithAndWithoutAccents" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="01206984-e023-f1dd-6f9e-3e541fff68f9">
+      <Execution id="99b3fe30-2e41-4b03-b655-e83dcedd6edc" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="Database_Fts5TextSearch_ShouldSupportVietnameseWithAndWithoutAccents" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.WorkflowService_RowVersionConflict_ShouldBeDetectedAndPreventOverwrites" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="534e2ad9-419a-9730-8b66-a642bf46910a">
+      <Execution id="285e1f32-ec15-471d-8914-991af209d31b" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="WorkflowService_RowVersionConflict_ShouldBeDetectedAndPreventOverwrites" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.BusinessRules_ValidateEvidenceInterval_ShouldEnforceSurrogateAndQuoteHash" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="c1d67f5c-903a-703e-69e1-14cb3144b983">
+      <Execution id="58845b59-805b-4be0-bacf-3aae24273f8a" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="BusinessRules_ValidateEvidenceInterval_ShouldEnforceSurrogateAndQuoteHash" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.CorrespondenceWorkflowTests.DraftReportAndBackup_ShouldWorkOnFreshWorkspace_WithoutReadingWriterLock" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="a21e9b18-fbd4-8e6f-e3dd-3294396a194f">
+      <Execution id="a7c14ea6-9ff7-4ad1-b66f-9670367caeea" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.CorrespondenceWorkflowTests" name="DraftReportAndBackup_ShouldWorkOnFreshWorkspace_WithoutReadingWriterLock" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.Domain_ExactRatio_ShouldComputeExactDecimalsWithoutIntermediateRounding" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="0adda273-aad4-21fc-0cc7-aa9fbbac1d8f">
+      <Execution id="0e891f5e-fd2f-475e-a653-b69832120e2c" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="Domain_ExactRatio_ShouldComputeExactDecimalsWithoutIntermediateRounding" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.CorrespondenceWorkflowTests.Completion_ShouldDistinguishLateAndOnTime_AndKeepUnknownDeadline" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="a592c9d8-39a7-733a-9e5b-42a1f03dd647">
+      <Execution id="7465ac4b-fff6-479c-8ebd-c1472534b95b" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.CorrespondenceWorkflowTests" name="Completion_ShouldDistinguishLateAndOnTime_AndKeepUnknownDeadline" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.CorrespondenceWorkflowTests.TwoMachines_ShouldPreserveMetadata_AndRequireApprovalAndReceiptBeforeCompletion" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="cc2c4520-00eb-8648-fb20-b2368cf8784d">
+      <Execution id="d3713e2d-ac04-4cf1-b107-974fbe3d89ae" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.CorrespondenceWorkflowTests" name="TwoMachines_ShouldPreserveMetadata_AndRequireApprovalAndReceiptBeforeCompletion" />
+    </UnitTest>
+    <UnitTest name="SACD.Tests.SacdFullTestSuite.BusinessRules_ValidateFileSignature_ShouldValidateMagicBytesAccurately" storage="d:\project\sacd\tests\sacd.tests\bin\debug\net8.0\sacd.tests.dll" id="302d3ee0-3127-bb62-7698-939043fedcae">
+      <Execution id="15a8a717-d429-4801-a4e3-6646198f7711" />
+      <TestMethod codeBase="D:\Project\SACD\tests\SACD.Tests\bin\Debug\net8.0\SACD.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="SACD.Tests.SacdFullTestSuite" name="BusinessRules_ValidateFileSignature_ShouldValidateMagicBytesAccurately" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="da09e952-3f10-8b9d-a0e5-866472763395" executionId="910ea7ed-9e1d-4269-8969-ee8ffd32b3ad" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="aa54c814-6383-845e-5638-81c3129013f7" executionId="a85bbe4c-80a3-408b-a422-226c51881ef0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a21e9b18-fbd4-8e6f-e3dd-3294396a194f" executionId="a7c14ea6-9ff7-4ad1-b66f-9670367caeea" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cc2c4520-00eb-8648-fb20-b2368cf8784d" executionId="d3713e2d-ac04-4cf1-b107-974fbe3d89ae" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f4f15997-94e0-f8c6-e51d-9aed3c077ed6" executionId="f022f264-7847-4e36-9d60-13dad147c633" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e8730e98-17e5-5ceb-fa61-3500cf7e06cc" executionId="93625ee1-cdbe-45dd-ada7-79e8b2e5fb9b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="302d3ee0-3127-bb62-7698-939043fedcae" executionId="15a8a717-d429-4801-a4e3-6646198f7711" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3c066736-ad2b-f597-41f3-af8058584585" executionId="03a6ecdf-2dc8-4c73-b425-ef2115152ac9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cbfe317a-b7aa-a08d-6473-206d5c326b10" executionId="aa7b9d4f-a746-4aab-8ca7-701b0394c9b7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6d66347b-05ce-fd37-012d-0928b0439c89" executionId="99659261-875f-4e55-9fb7-6c9a4a166e56" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9ffc9c40-6fe0-1239-79e5-2d702d3ff120" executionId="56c8d7c9-67c0-4f33-aba7-c0998219d4ad" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7db7f806-731d-c182-6a62-b0ed48b191fb" executionId="0124674c-dd2e-450f-8cec-270163de5f2a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0adda273-aad4-21fc-0cc7-aa9fbbac1d8f" executionId="0e891f5e-fd2f-475e-a653-b69832120e2c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ae4d4d40-d9d2-5f0f-3f1e-d52658e4882e" executionId="329b4d56-a76e-4437-875f-f7eb5fe89969" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c1d67f5c-903a-703e-69e1-14cb3144b983" executionId="58845b59-805b-4be0-bacf-3aae24273f8a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="534e2ad9-419a-9730-8b66-a642bf46910a" executionId="285e1f32-ec15-471d-8914-991af209d31b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a592c9d8-39a7-733a-9e5b-42a1f03dd647" executionId="7465ac4b-fff6-479c-8ebd-c1472534b95b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3e49464c-f10e-6037-23f5-a6293542b78e" executionId="5e7e879e-5a7b-4906-8fbc-dbf16e4087cd" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f5df6919-2191-d1d1-5760-2c00c8c83de2" executionId="26961649-73a1-4840-8f9d-ab9a337af49d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c6b6670c-206b-4f81-ca74-3a6df163d259" executionId="e8384a5f-7e33-4ad0-b986-9529c996f9ee" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="260fb211-0add-8ac0-9981-fad1b2550220" executionId="5bdecc58-abb9-40cb-a7d7-2a916a59eaf7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dcafbf19-9176-4ee5-8c72-91e75949a5bf" executionId="6c912ca3-55c6-4842-aa09-63a7229ec365" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="01206984-e023-f1dd-6f9e-3e541fff68f9" executionId="99b3fe30-2e41-4b03-b655-e83dcedd6edc" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="23" executed="23" passed="23" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.5.3.1+6b60a9e56a (64-bit .NET 8.0.32)&#xD;
+[xUnit.net 00:00:00.45]   Discovering: SACD.Tests&#xD;
+[xUnit.net 00:00:00.78]   Discovered:  SACD.Tests&#xD;
+[xUnit.net 00:00:00.79]   Starting:    SACD.Tests&#xD;
+[xUnit.net 00:00:06.25]   Finished:    SACD.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

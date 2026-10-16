@@ -1,0 +1,12 @@
+DỮ LIỆU GIẢ LẬP PHỤC VỤ KIỂM THỬ — KHÔNG PHẢI VĂN BẢN NGHIỆP VỤ
+Loại văn bản: Công văn
+Số: 123/CV-THU
+Ngày ban hành: 2026-10-16
+Đơn vị ban hành: Đơn vị giả lập A
+Đơn vị nhận: Đơn vị giả lập B
+Người ký: Người ký thử nghiệm
+Độ mật: Không mật
+Trích yếu: Yêu cầu tổng hợp kết quả kiểm thử phần mềm.
+Công việc liên quan: Kiểm tra dữ liệu giả, lập báo cáo thử nghiệm.
+Hạn xử lý: 2026-10-20
+Đề xuất xử lý: Đội thử nghiệm

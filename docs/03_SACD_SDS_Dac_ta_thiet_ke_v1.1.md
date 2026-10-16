@@ -1,5 +1,7 @@
 # SACD SDS đặc tả thiết kế phần mềm
 
+> Cập nhật triển khai 16/10/2026: [luồng hợp nhất v1.2](08_SACD_Quy_trinh_hop_nhat_v1.2.md) dùng `CorrespondenceViewModel` → `CorrespondenceService` → SQLite/kho object. `ControlledFormFiller` là adapter Windows UIA theo mapping chính xác, đọc lại giá trị và dừng trước Lưu. `RpaEngine` cũ vẫn là mô phỏng, được ghi rõ trên giao diện. Phiếu DOCX dùng `ProcessingSlipGenerator` và QRCoder. Không có API/email/cloud AI mới trong bản này. Dòng công việc được lưu trong ba bảng mở rộng và audit; chưa hoàn tất toàn bộ kiến trúc mục tiêu bên dưới.
+
 **Mã tài liệu:** SACD-DOC-03  
 **Phiên bản:** 1.1  
 **Ngày:** 15/10/2026  

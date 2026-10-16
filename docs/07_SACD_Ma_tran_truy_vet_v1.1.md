@@ -1,5 +1,7 @@
 # SACD Ma trận truy vết và độ bao phủ thiết kế
 
+> Bổ sung bằng chứng triển khai 16/10/2026: `CorrespondenceWorkflowTests` kiểm tra luồng hai máy, trạng thái, USB, rowVersion, vai trò, revision/block, DOCX/QR, script version, báo cáo nháp/snapshot và hạn hoàn thành. `SACD.Desktop.Smoke` kiểm tra thao tác WPF và adapter UIA trên biểu mẫu giả lập. Tổng xUnit: 23 ca đạt trên máy phát triển. Kết quả này chưa ánh xạ đủ từng FR/NFR, chưa thay UAT hay thử QLVB/email/máy in của đơn vị. Phạm vi và hướng dẫn: [v1.2](08_SACD_Quy_trinh_hop_nhat_v1.2.md).
+
 **Mã tài liệu:** SACD-DOC-07  
 **Phiên bản:** 1.1  
 **Ngày:** 15/10/2026  

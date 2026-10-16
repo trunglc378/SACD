@@ -1,0 +1,10 @@
+{
+  "ExecutablePath": "C:\\DUONG_DAN_CAN_THAY\\QLVB.exe",
+  "WindowTitle": "THAY BANG TIEU DE CHINH XAC CUA BIEU MAU",
+  "Fields": {
+    "Number": "THAY_AUTOMATION_ID_SO_VAN_BAN",
+    "Summary": "THAY_AUTOMATION_ID_TRICH_YEU",
+    "Issuer": "THAY_AUTOMATION_ID_DON_VI_BAN_HANH",
+    "DueDate": "THAY_AUTOMATION_ID_HAN_XU_LY"
+  }
+}

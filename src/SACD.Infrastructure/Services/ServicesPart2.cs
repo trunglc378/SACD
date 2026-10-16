@@ -952,6 +952,34 @@ VALUES (@id, @logId, 1, @hash, @map, @mapHash, @created);";
 
         public async Task<OperationResult<ReportRevisionInfo>> CreateDraftAsync(ReportRequest request, ActorContext actor, CancellationToken ct = default)
         {
+            if (request.TemplateVersionId == "TPL-DEFAULT")
+            {
+                using var lookup = _dbContext.CreateConnection();
+                using var query = lookup.CreateCommand();
+                query.CommandText = "SELECT id FROM TemplateVersion WHERE logicalId='SACD-BUILTIN-DRAFT' ORDER BY versionNo DESC LIMIT 1;";
+                string? templateId = await query.ExecuteScalarAsync(ct) as string;
+                if (templateId == null)
+                {
+                    string templatePath = Path.Combine(_dbContext.WorkspaceDirectory,"staging",Guid.NewGuid().ToString("N")+".docx");
+                    try
+                    {
+                        await _wordGenerator.GenerateReportDocxAsync(templatePath,new ReportRevisionEntity {VersionNo=1,State="Draft"},
+                            Array.Empty<ReportSectionEntity>(),Array.Empty<ClaimEntity>(),Array.Empty<FactVersionEntity>(),"Draft",ct);
+                        var stored = await _fileStore.StoreFileAsync(templatePath,ct);
+                        templateId = Guid.NewGuid().ToString("N");
+                        using var insert = lookup.CreateCommand();
+                        insert.CommandText = @"INSERT OR IGNORE INTO FileObject VALUES(@hash,@path,@size,@type,@now);
+INSERT INTO TemplateVersion(id,logicalId,versionNo,objectHash,mappingJson,mappingHash,createdUtc)
+VALUES(@id,'SACD-BUILTIN-DRAFT',1,@hash,'{}',@hash,@now);";
+                        insert.Parameters.AddWithValue("@hash",stored.Hash);insert.Parameters.AddWithValue("@path",stored.RelativePath);
+                        insert.Parameters.AddWithValue("@size",stored.SizeBytes);insert.Parameters.AddWithValue("@type",stored.MediaType);
+                        insert.Parameters.AddWithValue("@now",DateTime.UtcNow.ToString("o"));insert.Parameters.AddWithValue("@id",templateId);
+                        await insert.ExecuteNonQueryAsync(ct);
+                    }
+                    finally { if(File.Exists(templatePath)) File.Delete(templatePath); }
+                }
+                request = request with { TemplateVersionId=templateId };
+            }
             string reportId = request.ReportId ?? Guid.NewGuid().ToString("N");
             string revisionId = Guid.NewGuid().ToString("N");
             string now = DateTime.UtcNow.ToString("o");
@@ -1214,7 +1242,8 @@ VALUES (@id, @revId, @mode, @hash, @path, @sid, @created);";
         {
             string versionId = Guid.NewGuid().ToString("N");
             string now = DateTime.UtcNow.ToString("o");
-            string contentHash = Guid.NewGuid().ToString("N");
+            string contentHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+                JsonSerializer.Serialize(new { request.ProfileJson, request.Steps })))).ToLowerInvariant();
 
             using var conn = _dbContext.CreateConnection();
             using var tx = conn.BeginTransaction();
@@ -1227,11 +1256,18 @@ VALUES (@id, @revId, @mode, @hash, @path, @sid, @created);";
             cmdScript.Parameters.AddWithValue("@now", now);
             await cmdScript.ExecuteNonQueryAsync(ct);
 
+            using var cmdNext = conn.CreateCommand();
+            cmdNext.Transaction = tx;
+            cmdNext.CommandText = "SELECT COALESCE(MAX(versionNo),0)+1 FROM ScriptVersion WHERE scriptId=@id;";
+            cmdNext.Parameters.AddWithValue("@id", request.ScriptId);
+            int versionNo = Convert.ToInt32(await cmdNext.ExecuteScalarAsync(ct));
+
             using var cmdVer = conn.CreateCommand();
             cmdVer.Transaction = tx;
             cmdVer.CommandText = @"
 INSERT INTO ScriptVersion (id, scriptId, versionNo, state, profileJson, contentHash, createdUtc)
-VALUES (@id, @scriptId, 1, 'Published', @profile, @hash, @now);";
+VALUES (@id, @scriptId, @version, 'Published', @profile, @hash, @now);";
+            cmdVer.Parameters.AddWithValue("@version", versionNo);
             cmdVer.Parameters.AddWithValue("@id", versionId);
             cmdVer.Parameters.AddWithValue("@scriptId", request.ScriptId);
             cmdVer.Parameters.AddWithValue("@profile", request.ProfileJson);
@@ -1260,7 +1296,7 @@ VALUES (@id, @verId, @ord, @act, @sel, @params, @timeout, @retry);";
             await tx.CommitAsync(ct);
 
             return OperationResult<ScriptVersionInfo>.Ok(new ScriptVersionInfo(
-                versionId, request.Name, 1, request.Steps.Count, contentHash
+                versionId, request.Name, versionNo, request.Steps.Count, contentHash
             ), actor.CorrelationId);
         }
     }
@@ -1426,12 +1462,40 @@ VALUES (@id, @kind, (SELECT COALESCE(MAX(versionNo),0)+1 FROM ConfigVersion WHER
         public async Task<OperationResult<BackupInfo>> BackupAsync(BackupRequest request, ActorContext actor, CancellationToken ct = default)
         {
             string backupId = Guid.NewGuid().ToString("N");
-            string zipName = $"SACD_Backup_{DateTime.UtcNow:yyyyMMdd_HHmmss}.zip";
+            string zipName = $"SACD_Backup_{DateTime.UtcNow:yyyyMMdd_HHmmss}_{backupId[..6]}.zip";
             string targetZip = Path.Combine(request.DestinationDirectory, zipName);
             string? dir = Path.GetDirectoryName(targetZip);
             if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
-            ZipFile.CreateFromDirectory(_dbContext.WorkspaceDirectory, targetZip, CompressionLevel.Optimal, false);
+            string workspace = Path.GetFullPath(_dbContext.WorkspaceDirectory).TrimEnd(Path.DirectorySeparatorChar)+Path.DirectorySeparatorChar;
+            if(Path.GetFullPath(targetZip).StartsWith(workspace,StringComparison.OrdinalIgnoreCase))
+                return OperationResult<BackupInfo>.Fail(ErrorCodes.StorageFailure,"Chọn thư mục sao lưu nằm ngoài kho dữ liệu.",actor.CorrelationId);
+            string snapshot = Path.Combine(Path.GetTempPath(),"SACD_Backup_"+backupId);
+            Directory.CreateDirectory(snapshot);
+            try
+            {
+                using var source = _dbContext.CreateConnection();
+                using var destination = new SqliteConnection(new SqliteConnectionStringBuilder {DataSource=Path.Combine(snapshot,"sacd_workspace.db"),Pooling=false}.ToString());
+                destination.Open();source.BackupDatabase(destination);
+                using var objects = destination.CreateCommand();objects.CommandText="SELECT hash FROM FileObject";
+                using var reader = objects.ExecuteReader();
+                Directory.CreateDirectory(Path.Combine(snapshot,"objects"));
+                while(await reader.ReadAsync(ct))
+                {
+                    string objectHash=reader.GetString(0);
+                    _=new Sha256Hash(objectHash);
+                    string original=Path.Combine(_dbContext.WorkspaceDirectory,"objects",objectHash);
+                    using(var input=File.OpenRead(original))
+                    {
+                        string actual=Convert.ToHexString(await SHA256.HashDataAsync(input,ct)).ToLowerInvariant();
+                        if(actual!=objectHash)throw new InvalidDataException("Tệp gốc không khớp mã băm khi sao lưu.");
+                    }
+                    File.Copy(original,Path.Combine(snapshot,"objects",objectHash));
+                }
+                reader.Close();destination.Close();
+                ZipFile.CreateFromDirectory(snapshot,targetZip,CompressionLevel.Optimal,false);
+            }
+            finally { Directory.Delete(snapshot,true); }
 
             string hash;
             using (var sha = SHA256.Create())
@@ -1446,7 +1510,7 @@ VALUES (@id, @kind, (SELECT COALESCE(MAX(versionNo),0)+1 FROM ConfigVersion WHER
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
 INSERT INTO BackupRecord (id, manifestHash, relativeOrSelectedPath, state, drillState, actorSid, createdUtc)
-VALUES (@id, @hash, @path, 'Verified', 'Passed', @sid, @now);";
+VALUES (@id, @hash, @path, 'Verified', 'NotRun', @sid, @now);";
             cmd.Parameters.AddWithValue("@id", backupId);
             cmd.Parameters.AddWithValue("@hash", hash);
             cmd.Parameters.AddWithValue("@path", targetZip);

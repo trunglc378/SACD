@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:SACD.Desktop.ViewModels"
+        xmlns:local="clr-namespace:SACD.Desktop"
         mc:Ignorable="d"
         Title="SACD — Software for Automatically Compiling Documents" Height="780" Width="1180"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="CenterScreen" MinWidth="1000" MinHeight="650"
         Background="#F5F7FA">
 
     <Window.DataContext>
@@ -61,15 +62,18 @@
         </Border>
 
         <!-- Main Workspace Tabs -->
-        <TabControl Grid.Row="1" Margin="10">
+        <TabControl Grid.Row="1" Margin="10" SelectedIndex="{Binding SelectedTabIndex}">
             
             <!-- Tab 1: Workspace -->
-            <TabItem Header="1. Không gian làm việc">
+            <TabItem Header="1. Chọn máy / Mở kho">
                 <Grid Margin="15">
                     <StackPanel MaxWidth="800" HorizontalAlignment="Left">
                         <TextBlock Text="Cấu hình Không gian làm việc cục bộ (Workspace)" FontSize="16" FontWeight="Bold" Margin="0,0,0,15" Foreground="#0D47A1"/>
                         <TextBlock Text="Đường dẫn lưu trữ CSDL SQLite và kho đối tượng tệp gốc (objects):" FontWeight="SemiBold" Margin="0,5"/>
                         <TextBox Text="{Binding WorkspacePath, UpdateSourceTrigger=PropertyChanged}" Padding="8" FontSize="13"/>
+                        <TextBlock Text="Vai trò khi tạo kho mới: Intake = Máy 1 tiếp nhận; Management = Máy 2 quản lý. Kho đã có giữ vai trò ban đầu." TextWrapping="Wrap" Margin="0,12,0,5"/>
+                        <ComboBox ItemsSource="{Binding MachineProfiles}" SelectedItem="{Binding SelectedMachineProfile}" Padding="6"/>
+                        <TextBlock Text="Sau khi mở kho, chuyển sang tab 2. Quy trình văn thư. Khi thử hai máy trên cùng máy tính, dùng hai thư mục kho riêng." TextWrapping="Wrap" Margin="0,12,0,0"/>
                         <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
                             <Button Content="Mở / Khởi tạo Kho làm việc" Command="{Binding OpenWorkspaceCommand}" Background="#2E7D32"/>
                             <Button Content="Tạo sao lưu Snapshot (Zip)" Command="{Binding BackupWorkspaceCommand}" Background="#455A64"/>
@@ -87,7 +91,18 @@
             </TabItem>
 
             <!-- Tab 2: Intake & Review -->
-            <TabItem Header="2. Tiếp nhận &amp; Đối chiếu text">
+            <TabItem Header="2. Quy trình văn thư">
+                <Grid>
+                    <TextBlock Text="Mở kho tại tab 1 trước khi bắt đầu. Chọn vai trò Máy 1 hoặc Máy 2 và dùng kho riêng cho từng máy." Margin="20" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                    <local:CorrespondenceView DataContext="{Binding CaseDesk}">
+                        <local:CorrespondenceView.Style><Style TargetType="local:CorrespondenceView">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers><DataTrigger Binding="{Binding DataContext.IsWorkspaceOpen,RelativeSource={RelativeSource AncestorType=Window}}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers>
+                        </Style></local:CorrespondenceView.Style>
+                    </local:CorrespondenceView>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Thử text mẫu">
                 <Grid Margin="10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -142,7 +157,7 @@
             </TabItem>
 
             <!-- Tab 3: Deadlines & Tasks -->
-            <TabItem Header="3. Hạn xử lý &amp; Nhiệm vụ">
+            <TabItem Header="Nhiệm vụ bổ sung">
                 <Grid Margin="10" Background="White">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -174,7 +189,7 @@
             </TabItem>
 
             <!-- Tab 4: Search & Audit -->
-            <TabItem Header="4. Tra cứu FTS5 &amp; Nhật ký">
+            <TabItem Header="Tra cứu FTS5">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -204,7 +219,7 @@
             </TabItem>
 
             <!-- Tab 5: Word Report Studio -->
-            <TabItem Header="5. Báo cáo Word (OpenXML)">
+            <TabItem Header="Báo cáo tổng hợp">
                 <Grid Margin="15" Background="White">
                     <StackPanel MaxWidth="800" HorizontalAlignment="Left" Margin="10">
                         <TextBlock Text="Biên tập và Xuất Báo cáo tổng hợp Word (.docx)" FontSize="16" FontWeight="Bold" Foreground="#0D47A1" Margin="0,0,0,15"/>
@@ -230,10 +245,10 @@
             </TabItem>
 
             <!-- Tab 6: RPA Studio -->
-            <TabItem Header="6. Tự động hóa QLVB (RPA)">
+            <TabItem Header="RPA mô phỏng">
                 <Grid Margin="15" Background="White">
                     <StackPanel MaxWidth="800" HorizontalAlignment="Left" Margin="10">
-                        <TextBlock Text="Thực thi Kịch bản Tự động hóa Giao diện QLVB" FontSize="16" FontWeight="Bold" Foreground="#0D47A1" Margin="0,0,0,15"/>
+                        <TextBlock Text="Thử trạng thái RPA mô phỏng — không nhập dữ liệu vào QLVB thật" FontSize="16" FontWeight="Bold" Foreground="#0D47A1" Margin="0,0,0,15"/>
                         <TextBlock Text="Kịch bản mẫu được cấp quyền: 'Tự động điền số văn bản, trích yếu và thời hạn vào phần mềm QLVB'." Margin="0,5"/>
                         <Button Content="Chạy Kịch bản có kiểm soát (với điểm dừng PauseForUser)" Command="{Binding RunRpaMacroCommand}" Margin="0,15,0,0" Width="400" HorizontalAlignment="Left"/>
 

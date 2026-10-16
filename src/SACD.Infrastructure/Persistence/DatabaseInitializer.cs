@@ -578,6 +578,20 @@ CREATE VIRTUAL TABLE IF NOT EXISTS TextSearch USING fts5(
  rawTextNfc UNINDEXED,
  searchText
 );
+
+CREATE TABLE IF NOT EXISTS CorrespondenceCase (
+ id TEXT PRIMARY KEY, documentId TEXT NOT NULL UNIQUE REFERENCES Document(id),
+ payloadJson TEXT NOT NULL, rowVersion INTEGER NOT NULL CHECK(rowVersion>0)
+);
+CREATE TABLE IF NOT EXISTS CorrespondenceCaseEvent (
+ id TEXT PRIMARY KEY, caseId TEXT NOT NULL REFERENCES CorrespondenceCase(id),
+ action TEXT NOT NULL, actor TEXT NOT NULL, atUtc TEXT NOT NULL, note TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS CorrespondenceCaseImport (
+ originWorkspaceId TEXT NOT NULL, originCaseId TEXT NOT NULL, originVersion INTEGER NOT NULL,
+ contentHash TEXT NOT NULL, localCaseId TEXT NOT NULL REFERENCES CorrespondenceCase(id),
+ PRIMARY KEY(originWorkspaceId,originCaseId)
+);
 ";
 
         public static void InitializeDatabase(SqliteConnection connection)

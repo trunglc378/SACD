@@ -5,14 +5,18 @@
 [![WPF](https://img.shields.io/badge/UI-WPF%20MVVM-green.svg)]()
 [![SQLite](https://img.shields.io/badge/Database-SQLite%20FTS5-lightgrey.svg)]()
 [![OpenXML](https://img.shields.io/badge/Word-OpenXML%20SDK-purple.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-10%20Passed-success.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-23%20Passed-success.svg)]()
+
+**Bản cập nhật luồng nghiệp vụ 1.2 (16/10/2026):** kết hợp Trợ lý văn thư với RPA hỗ trợ QLVB. Sau khi chọn kho Máy 1 (`Intake`) hoặc Máy 2 (`Management`), dùng tab **Quy trình văn thư** để tiếp nhận tệp thật, kiểm tra thông tin, ghi nhận in, chuyển USB, đối soát QLVB, tạo phiếu Word có QR, trình duyệt, giao và ký nhận. Xem [quy trình và hướng dẫn từng bước](docs/08_SACD_Quy_trinh_hop_nhat_v1.2.md).
+
+**Phạm vi hiện tại:** TXT/DOCX, biểu mẫu thủ công, USB có metadata/checksum, theo dõi hạn và UIA với mapping. Email tự động, OCR scan/PDF thực, AI và mapping cho QLVB của đơn vị chưa được tích hợp. Tab RPA mô phỏng chỉ thử trạng thái. Các đặc tả v1.1 là mục tiêu thiết kế, không phải bằng chứng mọi chức năng đã hoàn thành.
 
 ---
 
 ## 1. Giới thiệu dự án
 
 **SACD** là ứng dụng Windows Desktop độc lập, cách ly mạng (Air-gap), phục vụ cán bộ tiếp nhận, văn thư và cán bộ tổng hợp trong cơ quan nhà nước / đơn vị nghiệp vụ:
-- Hoạt động độc lập giữa **Máy A (Tiếp nhận/Email)** và **Máy B (Quản lý văn bản/Tổng hợp)** thông qua gói tệp mã hóa/bảng kê SHA256 chuyển vật lý qua USB an toàn.
+- Hoạt động độc lập giữa **Máy A (Tiếp nhận/Email)** và **Máy B (Quản lý văn bản/Tổng hợp)** thông qua gói ZIP và bảng kê SHA256 chuyển vật lý qua USB an toàn. Gói hiện chưa mã hóa hoặc ký số.
 - Hỗ trợ tự động hóa thao tác nhập liệu vào phần mềm Quản lý văn bản (QLVB) hiện có qua kịch bản RPA có kiểm soát và điểm dừng can thiệp `PauseForUser`.
 - Quản lý hạn xử lý văn bản và nhiệm vụ (Còn hạn, Sắp hết hạn, Quá hạn) theo thời gian thực.
 - Tổng hợp số liệu nghiệp vụ chính xác (`Flow`, `Stock`, `Ratio`, `Cumulative`) không làm tròn trung gian.
@@ -24,7 +28,7 @@
 
 ## 2. Kiến trúc hệ thống (Clean Architecture & Modular Monolith)
 
-Dự án được xây dựng theo kiến trúc đa tầng chuẩn mực theo đặc tả thiết kế **SACD-DOC-03 (SDS v1.1)**:
+Dự án tổ chức thành các tầng theo định hướng **SACD-DOC-03 (SDS v1.1)**; một số adapter còn ở mức prototype:
 
 ```
 SACD/
@@ -67,7 +71,7 @@ SACD/
 
 ## 3. Cơ sở dữ liệu SQLite (50 bảng nghiệp vụ chuẩn v1.1)
 
-Mô hình dữ liệu tuân thủ tuyệt đối **SACD-DOC-05 (ERD v1.1)** với `PRAGMA foreign_keys=ON;` và chỉ mục FTS5:
+Mô hình dữ liệu tham chiếu **SACD-DOC-05 (ERD v1.1)** với `PRAGMA foreign_keys=ON;` và chỉ mục FTS5. Bản 1.2 bổ sung `CorrespondenceCase`, `CorrespondenceCaseEvent`, `CorrespondenceCaseImport` cho luồng hợp nhất; tổng cộng 53 bảng nghiệp vụ, chưa tính FTS/shadow:
 - **Nhóm nguồn & chứng cứ:** `Workspace`, `FileObject`, `Dossier`, `Document`, `TextRevision`, `TextBlock`, `EvidenceRef`, `MetadataVersion`, `ClassificationRecord`.
 - **Nhóm quy trình & giao nhận:** `TaskItem`, `TaskEvent`, `WorkflowEvent`, `TemplateVersion`, `ProposalVersion`, `DecisionRecord`, `DeliveryRecord`, `ReceiptRecord`.
 - **Nhóm số liệu & báo cáo:** `MetricDefinitionVersion`, `FactVersion`, `FactEvidence`, `DedupDecisionVersion`, `DedupMember`, `AggregationRun`, `AggregationContribution`, `Report`, `ReportRevision`, `ReportSection`, `Claim`, `ClaimEvidence`, `ReportSource`, `ReportAggregation`, `ExportRecord`.
@@ -86,16 +90,19 @@ Mô hình dữ liệu tuân thủ tuyệt đối **SACD-DOC-05 (ERD v1.1)** vớ
 ### Lệnh biên dịch và chạy
 ```powershell
 # Di chuyển vào thư mục dự án
-cd E:\Project\SACD
+cd D:\Project\SACD
 
 # Restore và build toàn bộ Solution
 dotnet build SACD.sln
 
-# Chạy toàn bộ 10 ca kiểm thử tự động xUnit
+# Chạy toàn bộ 23 ca kiểm thử tự động xUnit
 dotnet test SACD.sln
 
 # Chạy ứng dụng giao diện WPF
 dotnet run --project src/SACD.Desktop/SACD.Desktop.csproj
+
+# Smoke test giao diện và RPA trên biểu mẫu giả lập (Windows)
+dotnet run --project tests/SACD.Desktop.Smoke -- D:\Project\SACD\TestResults\workflow-ui.png
 ```
 
 ---

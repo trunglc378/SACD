@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        <ContextMenu x:Key="VietnameseTextMenu" x:Shared="False">
+            <MenuItem Header="Hoàn tác" Command="ApplicationCommands.Undo"/>
+            <Separator/>
+            <MenuItem Header="Cắt" Command="ApplicationCommands.Cut"/>
+            <MenuItem Header="Sao chép" Command="ApplicationCommands.Copy"/>
+            <MenuItem Header="Dán" Command="ApplicationCommands.Paste"/>
+            <Separator/>
+            <MenuItem Header="Chọn tất cả" Command="ApplicationCommands.SelectAll"/>
+        </ContextMenu>
+        <Style TargetType="TextBox">
+            <Setter Property="ContextMenu" Value="{StaticResource VietnameseTextMenu}"/>
+        </Style>
+    </ResourceDictionary>

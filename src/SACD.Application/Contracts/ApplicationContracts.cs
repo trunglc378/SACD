@@ -71,7 +71,8 @@ namespace SACD.Application.Contracts
     // CMP-12 Fact & Aggregation
     public record FactRequest(string MetricVersionId, string SourceRevisionId, string ValueStatus, string? ValueDecimalText, string PeriodStart, string PeriodEnd, string PeriodKind, string ScopeJson, string? EvidenceId);
     public record DedupRequest(string MetricVersionId, IReadOnlyList<string> FactVersionIds, string CanonicalFactVersionId, string Reason);
-    public record AggregateRequest(string MetricVersionId, string PeriodStart, string PeriodEnd, string GroupBy, IReadOnlyList<string> ConfirmedFactVersionIds);
+    public record AggregateRequest(string MetricVersionId, string PeriodStart, string PeriodEnd, string GroupBy, IReadOnlyList<string> ConfirmedFactVersionIds,
+        IReadOnlyList<string>? NumeratorFactIds = null, IReadOnlyList<string>? DenominatorFactIds = null);
     public record FactResult(string FactVersionId, string MetricName, string Period, string ValueText, string Status);
     public record DedupResult(string DecisionVersionId, string State, string CanonicalFactId);
     public record AggregateResult(string AggregationId, string MetricName, decimal TotalValue, string FormattedTotal, int ContributingFactsCount, string State);
@@ -83,6 +84,7 @@ namespace SACD.Application.Contracts
     public record ExportRequest(string ReportRevisionId, string ExportMode, string DestinationDirectory, bool Overwrite);
     public record TemplateResult(string TemplateVersionId, string LogicalId, int VersionNo, string ObjectHash);
     public record ReportRevisionInfo(string ReportId, string RevisionId, int VersionNo, string State, bool IsStale, string CreatedUtc);
+    public record ReportStatistics(int ReceivedDossiers, int OpenTasks, int CompletedTasks);
     public record ExportInfo(string ExportRecordId, string OutputPath, string OutputHash, string Mode, string CreatedUtc);
 
     // CMP-14 Recorder

@@ -1,3 +1,5 @@
+> Cập nhật 20/10/2026: [bản sửa, chạy thử và giới hạn](09_SACD_Ban_sua_va_chay_thu_2026-10-20.md). Các yêu cầu bên dưới là baseline thiết kế, không tự đồng nghĩa đã hiện thực.
+
 # SACD Đặc tả Use Case
 
 > Cập nhật 16/10/2026: bảng thao tác theo 12 bước thực tế tại [quy trình hợp nhất v1.2](08_SACD_Quy_trinh_hop_nhat_v1.2.md). Thứ tự: Received → Reviewed → Printed tại Máy 1; Imported → Registered → Submitted → Approved → Delivered → Acknowledged → Completed tại Máy 2. Mỗi xác nhận cần căn cứ; đề xuất người nhận khác quyết định được duyệt. Email, chữ ký lãnh đạo/người nhận, kiểm tra mã độc và kết quả in là tác vụ thực tế được cán bộ xác nhận, chưa được tự động kiểm chứng bởi SACD.

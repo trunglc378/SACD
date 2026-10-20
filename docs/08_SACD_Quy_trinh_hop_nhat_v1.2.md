@@ -1,3 +1,5 @@
+> **Bổ sung 20/10:** dùng .NET 10; PDF text đọc thật theo trang, DOCX có bảng/header/footer; scan chưa OCR không được xác nhận toàn văn. Sau Approved cần đối soát chỉ đạo đã cập nhật QLVB trước Deliver. Xem [bản sửa](09_SACD_Ban_sua_va_chay_thu_2026-10-20.md). Những mô tả PDF fallback bên dưới là lịch sử đã được thay thế.
+
 # SACD — Quy trình văn thư hai máy và hỗ trợ RPA
 
 Phiên bản: 1.2 · Ngày: 16/10/2026

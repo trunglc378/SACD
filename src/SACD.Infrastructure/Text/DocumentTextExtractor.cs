@@ -72,7 +72,10 @@ namespace SACD.Infrastructure.Text
         public async Task<IReadOnlyList<TextBlockEntity>> ExtractBlocksAsync(string filePath, string revisionId, CancellationToken ct = default, string? originalExtension = null)
         {
             if (!File.Exists(filePath))
-                throw new FileNotFoundException("File to extract does not exist.", filePath);
+                throw new FileNotFoundException("Không tìm thấy tệp cần trích xuất nội dung.", filePath);
+            ct.ThrowIfCancellationRequested();
+            if (new FileInfo(filePath).Length > 50L * 1024 * 1024)
+                throw new InvalidDataException("Tệp vượt giới hạn 50 MiB.");
 
             string ext = (originalExtension ?? Path.GetExtension(filePath)).ToLowerInvariant();
             if (ext == ".docx")
@@ -83,11 +86,11 @@ namespace SACD.Infrastructure.Text
             {
                 return await ExtractFromTxtAsync(filePath, revisionId, ct);
             }
-            else
+            else if (ext == ".pdf")
             {
-                // Default fallback / PDF simulated text extractor
-                return await ExtractFromGenericOrPdfAsync(filePath, revisionId, ct);
+                return PdfTextReader.Extract(filePath, revisionId, ct);
             }
+            else throw new NotSupportedException("Chưa có bộ đọc cho định dạng " + ext);
         }
 
         private static IReadOnlyList<TextBlockEntity> ExtractFromDocx(string filePath, string revisionId)
@@ -99,7 +102,10 @@ namespace SACD.Infrastructure.Text
             var body = doc.MainDocumentPart?.Document?.Body;
             if (body != null)
             {
-                foreach (var para in body.Elements<Paragraph>())
+                var paragraphs = body.Descendants<Paragraph>()
+                    .Concat(doc.MainDocumentPart!.HeaderParts.Where(p => p.Header != null).SelectMany(p => p.Header!.Descendants<Paragraph>()))
+                    .Concat(doc.MainDocumentPart.FooterParts.Where(p => p.Footer != null).SelectMany(p => p.Footer!.Descendants<Paragraph>()));
+                foreach (var para in paragraphs)
                 {
                     string text = para.InnerText;
                     if (string.IsNullOrWhiteSpace(text)) continue;
@@ -126,7 +132,7 @@ namespace SACD.Infrastructure.Text
                     Id = Guid.NewGuid().ToString("N"),
                     RevisionId = revisionId,
                     Ordinal = 1,
-                    LocatorJson = "{\"type\":\"document\",\"index\":1}",
+                    LocatorJson = "{\"type\":\"document\",\"index\":1,\"needsOcr\":true}",
                     ExtractedText = "(Văn bản rỗng hoặc không có đoạn văn bản khả dụng)",
                     RawTextNfc = "(Văn bản rỗng hoặc không có đoạn văn bản khả dụng)",
                     SearchText = VietnameseTextNormalizer.PrepareSearchText("Văn bản rỗng"),
@@ -180,66 +186,5 @@ namespace SACD.Infrastructure.Text
             return blocks;
         }
 
-        private static async Task<IReadOnlyList<TextBlockEntity>> ExtractFromGenericOrPdfAsync(string filePath, string revisionId, CancellationToken ct)
-        {
-            var blocks = new List<TextBlockEntity>();
-            byte[] bytes = await File.ReadAllBytesAsync(filePath, ct);
-
-            // Attempt to parse text streams if ASCII/UTF8 strings are embedded
-            string rawContent = Encoding.UTF8.GetString(bytes);
-            var stringBuilder = new StringBuilder();
-            int page = 1;
-            int ordinal = 1;
-
-            using (var reader = new StringReader(rawContent))
-            {
-                string? line;
-                while ((line = await reader.ReadLineAsync(ct)) != null)
-                {
-                    // Clean printable text
-                    var clean = new StringBuilder();
-                    foreach (char c in line)
-                    {
-                        if (!char.IsControl(c) || c == '\t') clean.Append(c);
-                    }
-                    string text = clean.ToString().Trim();
-                    if (text.Length > 10)
-                    {
-                        string nfc = VietnameseTextNormalizer.NormalizeToNfc(text);
-                        blocks.Add(new TextBlockEntity
-                        {
-                            Id = Guid.NewGuid().ToString("N"),
-                            RevisionId = revisionId,
-                            Ordinal = ordinal++,
-                            LocatorJson = $"{{\"type\":\"page\",\"pageNumber\":{page}}}",
-                            ExtractedText = text,
-                            RawTextNfc = nfc,
-                            SearchText = VietnameseTextNormalizer.PrepareSearchText(nfc),
-                            Reviewed = 0
-                        });
-                        if (ordinal % 20 == 0) page++;
-                    }
-                }
-            }
-
-            if (blocks.Count == 0)
-            {
-                string fallback = $"[Trích xuất từ tệp: {Path.GetFileName(filePath)}] Dung lượng: {bytes.Length} bytes.";
-                string nfc = VietnameseTextNormalizer.NormalizeToNfc(fallback);
-                blocks.Add(new TextBlockEntity
-                {
-                    Id = Guid.NewGuid().ToString("N"),
-                    RevisionId = revisionId,
-                    Ordinal = 1,
-                    LocatorJson = "{\"type\":\"page\",\"pageNumber\":1}",
-                    ExtractedText = fallback,
-                    RawTextNfc = nfc,
-                    SearchText = VietnameseTextNormalizer.PrepareSearchText(nfc),
-                    Reviewed = 0
-                });
-            }
-
-            return blocks;
-        }
     }
 }

@@ -1,0 +1,240 @@
+{
+  "scope": "Historical baseline only; current behavior is verified by .NET regression tests. In-memory SQL probes, not C# execution.",
+  "commit": "293323cd020800232d9102ace9d6c90ac6fa0b64",
+  "sqlite_runtime": "3.37.2",
+  "documentation": {
+    "markdown_files_in_docs_excluding_analysis": 13,
+    "missing_relative_link_occurrences": 38,
+    "missing_targets_unique": [
+      "01_SACD_BRD_Quy_trinh_nghiep_vu_v1.1.md",
+      "02_SACD_SRS_Dac_ta_yeu_cau_v1.1.md",
+      "03_SACD_SDS_Dac_ta_thiet_ke_v1.1.md",
+      "04_SACD_Use_Case_v1.1.md",
+      "05_SACD_Du_lieu_ERD_v1.1.md",
+      "06_SACD_Hop_dong_tich_hop_RPA_USB_Word_v1.1.md",
+      "07_SACD_Ma_tran_truy_vet_v1.1.md",
+      "08_SACD_UX_UI_v1.1.md",
+      "09_SACD_Bao_mat_Threat_Model_v1.1.md",
+      "10_SACD_Kiem_thu_Test_Cases_v1.1.md",
+      "11_SACD_UAT_Nghiem_thu_v1.1.md",
+      "12_SACD_Ke_hoach_Backlog_Rui_ro_RACI_v1.1.md",
+      "13_SACD_Cau_hinh_Thay_doi_Phat_hanh_v1.1.md",
+      "14_SACD_Cai_dat_Trien_khai_v1.1.md",
+      "15_SACD_Huong_dan_nguoi_dung_v1.1.md",
+      "16_SACD_Van_hanh_Sao_luu_Su_co_v1.1.md",
+      "17_SACD_ADR_Quyet_dinh_Cau_hoi_v1.1.md",
+      "18_SACD_Bang_chung_kiem_thu_Readiness_v1.1.md",
+      "references/SACD_Phieu_dang_ky_de_tai_v1.0.md",
+      "references/SACD_Report1_Gioi_thieu_du_an_v1.0.md"
+    ],
+    "missing_links": [
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "01_SACD_BRD_Quy_trinh_nghiep_vu_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "06_SACD_Hop_dong_tich_hop_RPA_USB_Word_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "08_SACD_UX_UI_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "09_SACD_Bao_mat_Threat_Model_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "10_SACD_Kiem_thu_Test_Cases_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "11_SACD_UAT_Nghiem_thu_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "12_SACD_Ke_hoach_Backlog_Rui_ro_RACI_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "13_SACD_Cau_hinh_Thay_doi_Phat_hanh_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "14_SACD_Cai_dat_Trien_khai_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "15_SACD_Huong_dan_nguoi_dung_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "16_SACD_Van_hanh_Sao_luu_Su_co_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "17_SACD_ADR_Quyet_dinh_Cau_hoi_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "18_SACD_Bang_chung_kiem_thu_Readiness_v1.1.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "references/SACD_Phieu_dang_ky_de_tai_v1.0.md"
+      },
+      {
+        "source": "docs/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "references/SACD_Report1_Gioi_thieu_du_an_v1.0.md"
+      },
+      {
+        "source": "docs/02_SACD_SRS_Dac_ta_yeu_cau_v1.1.md",
+        "target": "10_SACD_Kiem_thu_Test_Cases_v1.1.md"
+      },
+      {
+        "source": "docs/02_SACD_SRS_Dac_ta_yeu_cau_v1.1.md",
+        "target": "17_SACD_ADR_Quyet_dinh_Cau_hoi_v1.1.md"
+      },
+      {
+        "source": "docs/02_SACD_SRS_Dac_ta_yeu_cau_v1.1.md",
+        "target": "11_SACD_UAT_Nghiem_thu_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "01_SACD_BRD_Quy_trinh_nghiep_vu_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "02_SACD_SRS_Dac_ta_yeu_cau_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "03_SACD_SDS_Dac_ta_thiet_ke_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "04_SACD_Use_Case_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "05_SACD_Du_lieu_ERD_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "06_SACD_Hop_dong_tich_hop_RPA_USB_Word_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "07_SACD_Ma_tran_truy_vet_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "08_SACD_UX_UI_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "09_SACD_Bao_mat_Threat_Model_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "10_SACD_Kiem_thu_Test_Cases_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "11_SACD_UAT_Nghiem_thu_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "12_SACD_Ke_hoach_Backlog_Rui_ro_RACI_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "13_SACD_Cau_hinh_Thay_doi_Phat_hanh_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "14_SACD_Cai_dat_Trien_khai_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "15_SACD_Huong_dan_nguoi_dung_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "16_SACD_Van_hanh_Sao_luu_Su_co_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "17_SACD_ADR_Quyet_dinh_Cau_hoi_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "18_SACD_Bang_chung_kiem_thu_Readiness_v1.1.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "references/SACD_Phieu_dang_ky_de_tai_v1.0.md"
+      },
+      {
+        "source": "docs/Review/00_SACD_Huong_dan_bo_tai_lieu_v1.1.md",
+        "target": "references/SACD_Report1_Gioi_thieu_du_an_v1.0.md"
+      }
+    ]
+  },
+  "xunit_fact_methods_in_source": 23,
+  "historical_trx": {
+    "file": "TestResults/SACD.Tests.trx",
+    "counters": {
+      "total": "23",
+      "executed": "23",
+      "passed": "23",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "times": {
+      "creation": "2026-10-16T10:38:18.4809259+07:00",
+      "queuing": "2026-10-16T10:38:18.4809261+07:00",
+      "start": "2026-10-16T10:38:11.4440590+07:00",
+      "finish": "2026-10-16T10:38:22.1719887+07:00"
+    },
+    "fresh_run": false
+  },
+  "schema": {
+    "declared_business_tables": 53,
+    "actual_tables_including_fts_and_shadow": 59,
+    "integrity_check": "ok",
+    "foreign_keys": 1
+  },
+  "sql_probes": {
+    "source_search_query_returns_obsolete_revision": {
+      "hits": 1,
+      "returned_revision": 1,
+      "current_revision": 2
+    },
+    "source_review_update_allows_unchecked_claim": {
+      "state": "Reviewed",
+      "is_stale": 0,
+      "claim_checked": 0,
+      "claim_evidence_count": 0
+    },
+    "confirmed_facts_without_evidence_allowed_by_schema": 2,
+    "source_stock_selection_depends_on_request_order": {
+      "old_then_new_selected": "10",
+      "new_then_old_selected": "25",
+      "expected_latest": "25"
+    },
+    "foreign_key_check_after_fixtures": []
+  }
+}

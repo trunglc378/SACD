@@ -13,7 +13,7 @@ namespace SACD.Domain.ValueObjects
         {
             if (string.IsNullOrWhiteSpace(value) || !HexRegex.IsMatch(value))
             {
-                throw new ArgumentException("SHA256 hash must be exactly 64 hexadecimal characters.", nameof(value));
+                throw new ArgumentException("Mã kiểm tra toàn vẹn phải gồm đúng 64 ký tự hệ thập lục phân.", nameof(value));
             }
             Value = value.ToLowerInvariant();
         }
@@ -140,7 +140,7 @@ namespace SACD.Domain.ValueObjects
         {
             if (denominator == 0)
             {
-                throw new DivideByZeroException("Denominator in ExactRatio cannot be zero (BR-29: mẫu 0 trả NotApplicable).");
+                throw new DivideByZeroException("Mẫu số không được bằng không; tỷ lệ này không áp dụng.");
             }
             Numerator = numerator;
             Denominator = denominator;

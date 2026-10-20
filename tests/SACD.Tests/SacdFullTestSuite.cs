@@ -472,6 +472,19 @@ VALUES
                 cmd.ExecuteNonQuery();
             }
 
+            // Confirmed aggregate fixtures must carry current reviewed source evidence.
+            string quoteHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes("10 25 18 20"))).ToLowerInvariant();
+            using (var evidenceConnection = dbContext.CreateConnection())
+            using (var evidence = evidenceConnection.CreateCommand())
+            {
+                evidence.CommandText = @"
+UPDATE TextRevision SET reviewState='Reviewed',reviewerSid='S-TEST',reviewedUtc=datetime('now') WHERE id='rev-fact';
+UPDATE Document SET currentRevisionId='rev-fact' WHERE id='doc-fact';
+INSERT INTO TextBlock(id,revisionId,ordinal,locatorJson,extractedText,rawTextNfc,searchText,reviewed) VALUES('fact-block','rev-fact',1,'{}','10 25 18 20','10 25 18 20','10 25 18 20',1);
+INSERT INTO EvidenceRef VALUES('fact-ev','rev-fact','fact-block',0,11,@hash,datetime('now'));
+INSERT INTO FactEvidence VALUES('fact-1','fact-ev'),('fact-2','fact-ev'),('fact-num','fact-ev'),('fact-den','fact-ev');";
+                evidence.Parameters.AddWithValue("@hash",quoteHash);evidence.ExecuteNonQuery();
+            }
             // Aggregate Flow metric: 10 + 25 = 35
             var flowRes = await factService.AggregateAsync(new AggregateRequest(
                 MetricVersionId: "met-flow",
@@ -491,7 +504,9 @@ VALUES
                 PeriodStart: "2026-10-01",
                 PeriodEnd: "2026-10-31",
                 GroupBy: "None",
-                ConfirmedFactVersionIds: new[] { "fact-num", "fact-den" }
+                ConfirmedFactVersionIds: new[] { "fact-num", "fact-den" },
+                NumeratorFactIds: new[] { "fact-num" },
+                DenominatorFactIds: new[] { "fact-den" }
             ), actor);
 
             Assert.True(ratioRes.Success);

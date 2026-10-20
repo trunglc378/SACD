@@ -1,3 +1,5 @@
+> Cập nhật 20/10: Dockerfile dùng .NET 10; healthcheck đọc SQLite không giành writer lock. Chưa chạy Docker trong đợt kiểm thử Windows này.
+
 # HƯỚNG DẪN ĐÓNG GÓI VÀ VẬN HÀNH SACD TRÊN DOCKER CONTAINER
 
 **Mã tài liệu:** SACD-DOCKER-GUIDE-01  
@@ -16,7 +18,7 @@ Hệ thống SACD gồm hai thành phần chính:
 
 ### 1.2. Có thể đóng gói Container được không?
 **HOÀN TOÀN ĐƯỢC.** 
-- Toàn bộ tầng nghiệp vụ Core Engine, Database SQLite FTS5, FileStore, Trình trích xuất văn bản, và Trình xuất báo cáo Word được viết trên **.NET 8.0 Standard/Cross-Platform**, hoàn toàn độc lập với UI.
+- Toàn bộ tầng nghiệp vụ Core Engine, Database SQLite FTS5, FileStore, Trình trích xuất văn bản, và Trình xuất báo cáo Word được viết trên **.NET 10.0 Standard/Cross-Platform**, hoàn toàn độc lập với UI.
 - Do đó, chúng ta đóng gói thành công **SACD Core Worker Container** chạy trên Linux Container hoặc Windows Container thông qua Docker Desktop.
 - Khi cần chạy giao diện đồ họa WPF Desktop trên các máy trạm yếu (không chạy qua Docker), người dùng sử dụng bản phát hành độc lập **Self-Contained Windows Executable** (được hướng dẫn chi tiết tại mục 4).
 
@@ -25,7 +27,7 @@ Hệ thống SACD gồm hai thành phần chính:
 ## 2. CẤU TRÚC ĐÓNG GÓI DOCKER CỦA SACD
 
 Hệ thống cung cấp sẵn hai tệp cấu hình đóng gói chuẩn:
-- `Dockerfile`: Xây dựng ảnh nhiều giai đoạn (Multi-stage build) trên nền `.NET 8.0 SDK` và `.NET 8.0 Runtime`.
+- `Dockerfile`: Xây dựng ảnh nhiều giai đoạn (Multi-stage build) trên nền `.NET 10.0 SDK` và `.NET 10.0 Runtime`.
 - `docker-compose.yml`: Quản lý container, thiết lập múi giờ Việt Nam (`Asia/Ho_Chi_Minh` UTC+7) và gắn kết dữ liệu ra ngoài máy chủ qua Docker Volume.
 - `.dockerignore`: Loại trừ mã nhị phân rác, tăng tốc độ build ảnh.
 
@@ -44,7 +46,7 @@ docker build -t sacd-engine:latest .
 ```
 
 *Quá trình build diễn ra qua 2 giai đoạn:*
-1. **Stage 1 (build):** Tải SDK .NET 8.0, restore thư viện NuGet và biên dịch tối ưu ở chế độ `Release`.
+1. **Stage 1 (build):** Tải SDK .NET 10.0, restore thư viện NuGet và biên dịch tối ưu ở chế độ `Release`.
 2. **Stage 2 (runtime):** Chỉ sao chép các tệp thực thi sang base image nhẹ (`dotnet/runtime:8.0`), loại bỏ toàn bộ mã nguồn và công cụ SDK, giúp dung lượng container nhỏ gọn và an toàn bảo mật.
 
 ### Bước 3: Khởi chạy Container bằng Docker CLI

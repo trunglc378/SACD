@@ -1,8 +1,9 @@
 <UserControl x:Class="SACD.Desktop.CorrespondenceView"
  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
- xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Background="White">
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:SACD.Desktop" Background="White">
  <UserControl.Resources>
-  <Style TargetType="TextBox"><Setter Property="Padding" Value="6"/><Setter Property="Margin" Value="0,2,10,7"/></Style>
+  <local:VietnameseDisplay x:Key="VietnameseDisplay"/>
+  <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}"><Setter Property="Padding" Value="6"/><Setter Property="Margin" Value="0,2,10,7"/></Style>
   <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
   <Style TargetType="Button"><Setter Property="Padding" Value="9,7"/><Setter Property="Margin" Value="2,3"/>
    <Setter Property="Background" Value="#1565C0"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/></Style>
@@ -12,7 +13,7 @@
   <Border Background="#E3F2FD" Padding="12"><StackPanel>
    <TextBlock Text="TRỢ LÝ VĂN THƯ — HỒ SƠ THEO QUY TRÌNH HAI MÁY" FontSize="18" FontWeight="Bold"/>
    <TextBlock Text="{Binding RoleGuide}" Margin="0,6,0,0"/>
-   <TextBlock Text="Email chưa kết nối tự động: kiểm tra hộp thư nội bộ, tải tệp rồi chọn Tiếp nhận. Khi không có email, không cần tạo hồ sơ." Margin="0,4,0,0"/>
+   <TextBlock Text="Trang tiếp nhận chưa kết nối tự động: tải tệp từ mạng nội bộ rồi chọn Tiếp nhận." Margin="0,4,0,0"/>
   </StackPanel></Border>
   <TextBlock Grid.Row="1" Text="{Binding DeadlineAlert}" Foreground="#B71C1C" FontWeight="Bold" Margin="4,8"/>
   <Grid Grid.Row="2">
@@ -26,7 +27,7 @@
       <Button Content="M1 · Tiếp nhận tệp thật" Command="{Binding ActionCommand}" CommandParameter="Receive"/>
       <Button Content="M2 · Nhập gói USB" Command="{Binding ActionCommand}" CommandParameter="Import"/>
      </WrapPanel>
-     <CheckBox IsChecked="{Binding PackageScanned}" Margin="4,6"><TextBlock Text="Gói USB đã được kiểm tra mã độc theo quy trình đơn vị" TextWrapping="Wrap"/><CheckBox.ToolTip>SACD kiểm tra checksum; việc kiểm tra mã độc do công cụ của đơn vị thực hiện.</CheckBox.ToolTip></CheckBox>
+     <CheckBox IsChecked="{Binding PackageScanned}" Margin="4,6"><TextBlock Text="Gói USB đã được kiểm tra mã độc theo quy trình đơn vị" TextWrapping="Wrap"/><CheckBox.ToolTip>SACD kiểm tra mã kiểm tra toàn vẹn; việc kiểm tra mã độc do công cụ của đơn vị thực hiện.</CheckBox.ToolTip></CheckBox>
     </StackPanel>
     <DataGrid ItemsSource="{Binding Cases}" SelectedItem="{Binding SelectedCase}" AutoGenerateColumns="False" IsReadOnly="True" Margin="0,8,0,0">
      <DataGrid.Columns><DataGridTextColumn Header="Mã hồ sơ" Binding="{Binding Code}" Width="145" MinWidth="145"/>
@@ -40,7 +41,7 @@
      <TextBlock Text="{Binding SelectedCase.Code}" FontSize="17" FontWeight="Bold"/>
      <TextBlock Text="{Binding SelectedCase.StateLabel}" Foreground="#1565C0" FontWeight="Bold" Margin="0,4"/>
      <Border Background="#FFF8E1" Padding="10" Margin="0,4,0,10"><TextBlock Text="{Binding NextStep}"/></Border>
-     <TextBlock Text="1. Thông tin văn bản — ngày nhập theo yyyy-MM-dd, hạn chưa rõ để trống" FontWeight="Bold"/>
+     <TextBlock Text="1. Thông tin văn bản — ngày nhập theo năm-tháng-ngày (ví dụ 2026-10-20), hạn chưa rõ để trống" FontWeight="Bold"/>
      <UniformGrid Columns="2">
       <StackPanel><TextBlock Text="Số văn bản"/><TextBox Text="{Binding SelectedCase.Number,UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
       <StackPanel><TextBlock Text="Loại văn bản"/><TextBox Text="{Binding SelectedCase.DocumentType,UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
@@ -64,18 +65,19 @@
       <Button Content="M1 · Xác nhận đã in giấy" Command="{Binding ActionCommand}" CommandParameter="Printed"/>
       <Button Content="M1 · Xuất gói USB" Command="{Binding ActionCommand}" CommandParameter="Export"/>
      </WrapPanel>
-     <Expander Header="Nội dung trích xuất để đối chiếu — PDF/scan cần kiểm tra tệp gốc" Margin="0,8">
+     <Expander Header="Nội dung trích xuất để đối chiếu — PDF hoặc bản quét cần kiểm tra tệp gốc" Margin="0,8">
       <TextBox Text="{Binding TextPreview,Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="220" VerticalScrollBarVisibility="Auto"/>
      </Expander>
      <TextBlock Text="2. Máy 2 — QLVB và trình lãnh đạo" FontWeight="Bold" Margin="0,10,0,5"/>
      <TextBlock Text="Mã hồ sơ / số đến đã lưu trong QLVB"/><TextBox Text="{Binding SelectedCase.ExternalRef,UpdateSourceTrigger=PropertyChanged}"/>
+     <TextBlock Text="{Binding SelectedCase.DecisionExternalStatus, Converter={StaticResource VietnameseDisplay}, StringFormat='Đối soát chỉ đạo QLVB: {0}'}" Foreground="#1565C0"/>
      <WrapPanel>
-      <Button Content="RPA · Điền QLVB theo cấu hình" Command="{Binding ActionCommand}" CommandParameter="Rpa"/>
+      <Button Content="Tự động điền QLVB theo cấu hình" Command="{Binding ActionCommand}" CommandParameter="Rpa"/>
       <Button Content="Đối soát đã lưu QLVB" Command="{Binding ActionCommand}" CommandParameter="Register"/>
-      <Button Content="Tạo phiếu Word + QR để in" Command="{Binding ActionCommand}" CommandParameter="Slip"/>
+      <Button Content="Tạo phiếu (.docx) có mã QR để in" Command="{Binding ActionCommand}" CommandParameter="Slip"/>
       <Button Content="Xác nhận đã trình phiếu + tài liệu" Command="{Binding ActionCommand}" CommandParameter="Submit"/>
      </WrapPanel>
-     <TextBlock Text="RPA điền 4 trường rồi dừng để cán bộ kiểm tra và bấm Lưu tại QLVB. Cần mapping đã khảo sát; có thể nhập thủ công khi chưa cấu hình." Margin="0,4"/>
+     <TextBlock Text="Tự động điền 4 trường rồi dừng để cán bộ kiểm tra và bấm Lưu tại QLVB. Cần cấu hình ánh xạ đã khảo sát; có thể nhập thủ công khi chưa cấu hình." Margin="0,4"/>
      <UniformGrid Columns="2">
       <StackPanel><TextBlock Text="Lãnh đạo ký duyệt thực tế"/><TextBox Text="{Binding SelectedCase.Leader,UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
       <StackPanel><TextBlock Text="Người / đội được giao theo quyết định"/><TextBox Text="{Binding SelectedCase.ApprovedReceiver,UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
@@ -86,13 +88,14 @@
      <TextBlock Text="Ghi chú / căn cứ của thao tác sắp xác nhận (bắt buộc)"/><TextBox Text="{Binding Note,UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="45"/>
      <WrapPanel>
       <Button Content="Cập nhật đã duyệt" Command="{Binding ActionCommand}" CommandParameter="Approve"/>
+      <Button Content="Đối soát chỉ đạo đã cập nhật QLVB" Command="{Binding ActionCommand}" CommandParameter="DecisionExternal"/>
       <Button Content="Đã giao bản giấy" Command="{Binding ActionCommand}" CommandParameter="Deliver"/>
       <Button Content="Xác nhận ký nhận" Command="{Binding ActionCommand}" CommandParameter="Receipt"/>
       <Button Content="Xác nhận hoàn thành" Command="{Binding ActionCommand}" CommandParameter="Complete"/>
      </WrapPanel>
      <TextBlock Text="Lịch sử hồ sơ" FontWeight="Bold" Margin="0,12,0,4"/>
      <DataGrid ItemsSource="{Binding History}" IsReadOnly="True" AutoGenerateColumns="False" Height="150">
-      <DataGrid.Columns><DataGridTextColumn Header="Thao tác" Binding="{Binding Action}" Width="150"/><DataGridTextColumn Header="Cán bộ" Binding="{Binding Actor}" Width="130"/><DataGridTextColumn Header="Thời điểm UTC" Binding="{Binding AtUtc}" Width="180"/><DataGridTextColumn Header="Căn cứ" Binding="{Binding Note}" Width="*"/></DataGrid.Columns>
+      <DataGrid.Columns><DataGridTextColumn Header="Thao tác" Binding="{Binding Action, Converter={StaticResource VietnameseDisplay}, ConverterParameter=Action}" Width="150"/><DataGridTextColumn Header="Cán bộ" Binding="{Binding Actor}" Width="130"/><DataGridTextColumn Header="Thời điểm (giờ Việt Nam)" Binding="{Binding AtUtc, Converter={StaticResource VietnameseDisplay}, ConverterParameter=Time}" Width="180"/><DataGridTextColumn Header="Căn cứ" Binding="{Binding Note, Converter={StaticResource VietnameseDisplay}, ConverterParameter=Note}" Width="*"/></DataGrid.Columns>
      </DataGrid>
     </StackPanel>
    </ScrollViewer>

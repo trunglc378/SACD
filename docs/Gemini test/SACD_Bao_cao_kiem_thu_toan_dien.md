@@ -1,3 +1,5 @@
+> **Tài liệu lịch sử, không phải nghiệm thu hiện hành.** Các tuyên bố NFR 100% bên dưới chưa được chứng minh cho checkout hiện tại. Xem [kiểm thử bản sửa](../09_SACD_Ban_sua_va_chay_thu_2026-10-20.md).
+
 # BÁO CÁO KIỂM THỬ TOÀN DIỆN HỆ THỐNG SACD
 ## (Smart Air-gap Cabinet Desktop - Phần mềm Quản lý Văn bản và Báo cáo Hai Máy Cách Ly)
 

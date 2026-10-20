@@ -43,7 +43,7 @@ namespace SACD.Desktop.ViewModels
         private CorrespondenceViewModel? _caseDesk;
         public CorrespondenceViewModel? CaseDesk { get=>_caseDesk; private set=>SetProperty(ref _caseDesk,value); }
         public string SelectedMachineProfile { get; set; } = "Intake";
-        public string[] MachineProfiles { get; } = { "Intake", "Management" };
+        public MachineProfileOption[] MachineProfiles { get; } = { new("Intake", "Máy 1 — Tiếp nhận"), new("Management", "Máy 2 — Quản lý") };
         private int _selectedTabIndex;
         public int SelectedTabIndex {get=>_selectedTabIndex;set=>SetProperty(ref _selectedTabIndex,value);}
 
@@ -171,17 +171,17 @@ namespace SACD.Desktop.ViewModels
                     _actor = ActorContext.Create(System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value ?? Environment.UserName, res.Value.WorkspaceId);
                     CaseDesk = new CorrespondenceViewModel(_dbContext!,_actor,MachineProfile);
                     SelectedTabIndex = 1;
-                    StatusMessage = $"Đã mở kho: {res.Value.WorkspaceId} (SID: {_actor.WindowsSid}, Mode: {MachineProfile})";
+                    StatusMessage = $"Đã mở kho: {res.Value.WorkspaceId} — {VietnameseDisplay.Label(MachineProfile)}";
                     await RefreshDataAsync();
                 }
                 else
                 {
-                    StatusMessage = $"Lỗi mở kho: {res.Message} [{res.Code}]";
+                    StatusMessage = $"Lỗi mở kho: {VietnameseDisplay.LocalizedError(res.Message)}";
                 }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Lỗi: {ex.Message}";
+                StatusMessage = $"Lỗi: {VietnameseDisplay.Error(ex)}";
             }
         }
 
@@ -246,7 +246,7 @@ namespace SACD.Desktop.ViewModels
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Lỗi nhập tệp: {ex.Message}";
+                StatusMessage = $"Lỗi nhập tệp: {VietnameseDisplay.Error(ex)}";
             }
         }
 
@@ -275,7 +275,7 @@ namespace SACD.Desktop.ViewModels
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Lỗi trích xuất: {ex.Message}";
+                StatusMessage = $"Lỗi trích xuất: {VietnameseDisplay.Error(ex)}";
             }
         }
 
@@ -295,16 +295,16 @@ namespace SACD.Desktop.ViewModels
 
                 if (res.Success)
                 {
-                    StatusMessage = "Văn bản đã chuyển trạng thái [Reviewed] có căn cứ.";
+                    StatusMessage = "Đã xác nhận đối chiếu nội dung văn bản có căn cứ.";
                 }
                 else
                 {
-                    StatusMessage = $"Lỗi duyệt: {res.Message}";
+                    StatusMessage = $"Lỗi duyệt: {VietnameseDisplay.LocalizedError(res.Message)}";
                 }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Lỗi duyệt: {ex.Message}";
+                StatusMessage = $"Lỗi duyệt: {VietnameseDisplay.Error(ex)}";
             }
         }
 
@@ -324,21 +324,21 @@ namespace SACD.Desktop.ViewModels
                     ExpectedRowVersion: 0,
                     AssigneeVersionId: null,
                     Name: $"Soạn thảo báo cáo định kỳ {DateTime.Now:dd/MM}",
-                    DueKind: "Date",
-                    DueDate: DateTime.Now.AddDays(3).ToString("yyyy-MM-dd"),
+                    DueKind: "Unknown",
+                    DueDate: null,
                     DueUtc: null,
                     EvidenceId: null
                 ), _actor);
 
                 if (res.Success)
                 {
-                    StatusMessage = "Đã tạo nhiệm vụ và tính toán thời hạn.";
+                    StatusMessage = "Đã tạo nhiệm vụ. Hạn xử lý chưa được xác định.";
                     await RefreshDataAsync();
                 }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Lỗi tạo nhiệm vụ: {ex.Message}";
+                StatusMessage = $"Lỗi tạo nhiệm vụ: {VietnameseDisplay.Error(ex)}";
             }
         }
 
@@ -361,12 +361,12 @@ namespace SACD.Desktop.ViewModels
                 }
                 else
                 {
-                    StatusMessage = $"Lỗi: {res.Message}";
+                    StatusMessage = $"Lỗi: {VietnameseDisplay.LocalizedError(res.Message)}";
                 }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Lỗi hoàn thành nhiệm vụ: {ex.Message}";
+                StatusMessage = $"Lỗi hoàn thành nhiệm vụ: {VietnameseDisplay.Error(ex)}";
             }
         }
 
@@ -388,7 +388,7 @@ namespace SACD.Desktop.ViewModels
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Lỗi tìm kiếm: {ex.Message}";
+                StatusMessage = $"Lỗi tìm kiếm: {VietnameseDisplay.Error(ex)}";
             }
         }
 
@@ -398,32 +398,35 @@ namespace SACD.Desktop.ViewModels
             {
                 if (mode == "Submission")
                 {
-                    StatusMessage = "Bản trình cần rà soát nguồn và nhận định. Giao diện này chỉ xuất bản nháp; phiếu trình văn bản nằm ở tab Quy trình văn thư.";
+                    StatusMessage = "Bản trình cần rà soát nguồn và nhận định. Giao diện này chỉ xuất bản nháp; phiếu trình văn bản nằm ở mục Quy trình văn thư.";
                     return;
                 }
                 Directory.CreateDirectory(ReportExportPath);
-                StatusMessage = $"Đang xuất báo cáo dạng {mode} bằng OpenXML...";
+                StatusMessage = $"Đang xuất báo cáo {VietnameseDisplay.Label(mode).ToLowerInvariant()}...";
 
                 // Create draft first
+                string periodStart=DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7)).AddDays(-30).ToString("yyyy-MM-dd");
+                string periodEnd=DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7)).ToString("yyyy-MM-dd");
+                var statistics=await _reportService.GetStatisticsAsync(periodStart,periodEnd);
                 var draftRes = await _reportService.CreateDraftAsync(new ReportRequest(
                     ReportId: null,
                     Name: ReportTitle,
                     TemplateVersionId: "TPL-DEFAULT",
-                    PeriodStart: DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd"),
-                    PeriodEnd: DateTime.Now.ToString("yyyy-MM-dd"),
+                    PeriodStart: periodStart,
+                    PeriodEnd: periodEnd,
                     SourceRevisionIds: Array.Empty<string>(),
                     AggregationIds: Array.Empty<string>(),
                     SectionTexts: new System.Collections.Generic.Dictionary<string, string>
                     {
-                        { "I. Tình hình tiếp nhận", $"Tổng số văn bản đã tiếp nhận và lập hồ sơ trong kỳ: {ImportedDocuments.Count}." },
-                        { "II. Theo dõi hạn và tiến độ", $"Số nhiệm vụ đang xử lý: {TasksList.Count(t => t.State != "Completed")}, đã hoàn thành: {TasksList.Count(t => t.State == "Completed")}." },
+                        { "I. Tình hình tiếp nhận", $"Số hồ sơ tiếp nhận trong kho từ {periodStart} đến {periodEnd}: {statistics.ReceivedDossiers}." },
+                        { "II. Theo dõi hạn và tiến độ", $"Nhiệm vụ thuộc các hồ sơ tiếp nhận trong kỳ: đang xử lý {statistics.OpenTasks}, đã hoàn thành {statistics.CompletedTasks}." },
                         { "III. Đề xuất kiến nghị", "Đề nghị tiếp tục duy trì quy trình kiểm tra toàn vẹn và đối soát dữ liệu trên máy cách ly." }
                     }
                 ), _actor);
 
                 if (!draftRes.Success || draftRes.Value == null)
                 {
-                    StatusMessage = $"Lỗi tạo nháp báo cáo: {draftRes.Message}";
+                    StatusMessage = $"Lỗi tạo nháp báo cáo: {VietnameseDisplay.LocalizedError(draftRes.Message)}";
                     return;
                 }
 
@@ -443,17 +446,17 @@ namespace SACD.Desktop.ViewModels
 
                 if (expRes.Success && expRes.Value != null)
                 {
-                    LastExportStatus = $"Đã xuất: {Path.GetFileName(expRes.Value.OutputPath)}\nSHA256: {expRes.Value.OutputHash}";
-                    StatusMessage = $"Xuất báo cáo Word ({mode}) thành công!";
+                    LastExportStatus = $"Đã xuất: {Path.GetFileName(expRes.Value.OutputPath)}\nMã kiểm tra toàn vẹn: {expRes.Value.OutputHash}";
+                    StatusMessage = $"Xuất báo cáo ({VietnameseDisplay.Label(mode).ToLowerInvariant()}) thành công!";
                 }
                 else
                 {
-                    StatusMessage = $"Lỗi xuất báo cáo: {expRes.Message}";
+                    StatusMessage = $"Lỗi xuất báo cáo: {VietnameseDisplay.LocalizedError(expRes.Message)}";
                 }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Lỗi: {ex.Message}";
+                StatusMessage = $"Lỗi: {VietnameseDisplay.Error(ex)}";
             }
         }
 
@@ -487,13 +490,13 @@ namespace SACD.Desktop.ViewModels
 
                     if (runRes.Success && runRes.Value != null)
                     {
-                        StatusMessage = $"RPA mô phỏng: {runRes.Value.State} (Bước {runRes.Value.CurrentStep}). Không thao tác QLVB thật; chức năng điền thật nằm trong Quy trình văn thư.";
+                        StatusMessage = $"Tự động hóa mô phỏng: {VietnameseDisplay.Label(runRes.Value.State)} (Bước {runRes.Value.CurrentStep}). Không thao tác QLVB thật; chức năng điền thật nằm trong Quy trình văn thư.";
                     }
                 }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Lỗi RPA: {ex.Message}";
+                StatusMessage = $"Lỗi tự động hóa: {VietnameseDisplay.Error(ex)}";
             }
         }
 
@@ -502,17 +505,17 @@ namespace SACD.Desktop.ViewModels
             try
             {
                 string backupDir = Path.GetFullPath(WorkspacePath).TrimEnd(Path.DirectorySeparatorChar) + ".backups";
-                StatusMessage = "Đang tạo bản sao lưu snapshot kho...";
+                StatusMessage = "Đang tạo bản sao lưu kho...";
                 var res = await _operationsService.BackupAsync(new BackupRequest(backupDir, "Sao lưu định kỳ"), _actor);
                 if (res.Success && res.Value != null)
                 {
-                    StatusMessage = $"Sao lưu thành công: {Path.GetFileName(res.Value.BackupPath)} (SHA256: {res.Value.ManifestHash[..8]}...)";
+                    StatusMessage = $"Sao lưu thành công: {Path.GetFileName(res.Value.BackupPath)} (Mã kiểm tra: {res.Value.ManifestHash[..8]}...)";
                     await RefreshDataAsync();
                 }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Lỗi sao lưu: {ex.Message}";
+                StatusMessage = $"Lỗi sao lưu: {VietnameseDisplay.Error(ex)}";
             }
         }
 

@@ -24,11 +24,11 @@ namespace SACD.Domain.Rules
         public static void ValidateWorkspace(WorkspaceEntity ws, int supportedSchemaVersion)
         {
             if (string.IsNullOrWhiteSpace(ws.OwnerSid))
-                throw new DomainValidationException("AccessDenied", "Owner SID must not be empty (BR-01).");
+                throw new DomainValidationException("AccessDenied", "Phải có định danh tài khoản sở hữu kho.");
 
             if (ws.SchemaVersion != supportedSchemaVersion)
                 throw new DomainValidationException("SchemaMismatch", 
-                    $"Workspace schema version {ws.SchemaVersion} does not match supported version {supportedSchemaVersion} (BR-02).");
+                    $"Phiên bản cấu trúc kho {ws.SchemaVersion} không khớp phiên bản được hỗ trợ {supportedSchemaVersion}.");
         }
 
         /// <summary>
@@ -39,10 +39,10 @@ namespace SACD.Domain.Rules
             _ = new Sha256Hash(file.Hash); // Throws if not 64 hex characters
 
             if (file.SizeBytes < 0)
-                throw new DomainValidationException("InputLimitExceeded", "File size cannot be negative (BR-05).");
+                throw new DomainValidationException("InputLimitExceeded", "Dung lượng tệp không được âm.");
 
             if (string.IsNullOrWhiteSpace(file.RelativePath))
-                throw new DomainValidationException("InvalidPath", "File relative path must not be empty (BR-05).");
+                throw new DomainValidationException("InvalidPath", "Đường dẫn tương đối của tệp không được để trống.");
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace SACD.Domain.Rules
                 if (string.IsNullOrWhiteSpace(rev.ReviewerSid) || string.IsNullOrWhiteSpace(rev.ReviewedUtc))
                 {
                     throw new DomainValidationException("InvalidEvidence", 
-                        "TextRevision cannot be marked Reviewed without reviewerSid and reviewedUtc (BR-08).");
+                        "Cần ghi nhận người đối chiếu và thời điểm đối chiếu trước khi xác nhận nội dung.");
                 }
             }
         }
@@ -70,7 +70,7 @@ namespace SACD.Domain.Rules
                 if (string.IsNullOrWhiteSpace(meta.ValueJson) || string.IsNullOrWhiteSpace(meta.EvidenceId))
                 {
                     throw new DomainValidationException("InvalidEvidence", 
-                        "Metadata cannot be Confirmed without ValueJson and an EvidenceRef (BR-09).");
+                        "Cần có giá trị thông tin và căn cứ trước khi xác nhận.");
                 }
             }
         }
@@ -82,24 +82,24 @@ namespace SACD.Domain.Rules
         {
             if (string.CompareOrdinal(fact.PeriodStart, fact.PeriodEnd) > 0)
             {
-                throw new DomainValidationException("InvalidPeriod", "PeriodStart cannot be after PeriodEnd (BR-24).");
+                throw new DomainValidationException("InvalidPeriod", "Ngày bắt đầu kỳ không được sau ngày kết thúc kỳ.");
             }
 
             if (fact.ValueStatus == "Known" && string.IsNullOrWhiteSpace(fact.ValueDecimalText))
             {
-                throw new DomainValidationException("NumericPrecisionLoss", "Fact with status Known must contain ValueDecimalText (BR-24).");
+                throw new DomainValidationException("NumericPrecisionLoss", "Số liệu đã biết phải có giá trị thập phân.");
             }
 
             if (fact.ValueStatus == "Missing" && !string.IsNullOrWhiteSpace(fact.ValueDecimalText))
             {
-                throw new DomainValidationException("NumericPrecisionLoss", "Fact with status Missing must have null ValueDecimalText (BR-24).");
+                throw new DomainValidationException("NumericPrecisionLoss", "Số liệu còn thiếu phải để trống giá trị thập phân.");
             }
 
             if (fact.Status == "Confirmed")
             {
                 if (string.IsNullOrWhiteSpace(fact.ReviewerSid) || string.IsNullOrWhiteSpace(fact.ReviewedUtc))
                 {
-                    throw new DomainValidationException("NeedsReview", "Confirmed fact must have reviewerSid and reviewedUtc (BR-09).");
+                    throw new DomainValidationException("NeedsReview", "Số liệu đã xác nhận phải có người và thời điểm kiểm tra.");
                 }
             }
         }
@@ -112,22 +112,22 @@ namespace SACD.Domain.Rules
             if (task.DueKind == "Unknown")
             {
                 if (!string.IsNullOrEmpty(task.DueDate) || !string.IsNullOrEmpty(task.DueUtc))
-                    throw new DomainValidationException("InvalidTaskDueDate", "DueKind Unknown cannot have DueDate or DueUtc set (BR-17).");
+                    throw new DomainValidationException("InvalidTaskDueDate", "Nhiệm vụ chưa xác định hạn phải để trống ngày và thời điểm đến hạn.");
             }
             else if (task.DueKind == "Date")
             {
                 if (string.IsNullOrEmpty(task.DueDate) || !string.IsNullOrEmpty(task.DueUtc))
-                    throw new DomainValidationException("InvalidTaskDueDate", "DueKind Date must have DueDate set and DueUtc null (BR-17).");
+                    throw new DomainValidationException("InvalidTaskDueDate", "Nhiệm vụ có hạn theo ngày phải ghi ngày đến hạn và để trống thời điểm đến hạn.");
             }
             else if (task.DueKind == "Instant")
             {
                 if (string.IsNullOrEmpty(task.DueUtc) || !string.IsNullOrEmpty(task.DueDate))
-                    throw new DomainValidationException("InvalidTaskDueDate", "DueKind Instant must have DueUtc set and DueDate null (BR-17).");
+                    throw new DomainValidationException("InvalidTaskDueDate", "Nhiệm vụ có hạn theo thời điểm phải ghi thời điểm đến hạn và để trống hạn theo ngày.");
             }
 
             if (task.State == "Completed" && string.IsNullOrEmpty(task.CompletedUtc))
             {
-                throw new DomainValidationException("TaskIncomplete", "Completed task must record completedUtc (BR-19).");
+                throw new DomainValidationException("TaskIncomplete", "Nhiệm vụ đã hoàn thành phải ghi nhận thời điểm hoàn thành.");
             }
         }
 
@@ -138,17 +138,17 @@ namespace SACD.Domain.Rules
         {
             if (decision.ProposalVersionId != proposal.Id)
             {
-                throw new DomainValidationException("RelationMismatch", "Decision must reference the specific ProposalVersionId (BR-13).");
+                throw new DomainValidationException("RelationMismatch", "Quyết định phải liên kết đúng phiên bản đề xuất.");
             }
 
             if (string.IsNullOrWhiteSpace(decision.DecisionMakerVersionId))
             {
-                throw new DomainValidationException("NeedsReview", "Decision must have a designated decisionMakerVersionId (BR-13).");
+                throw new DomainValidationException("NeedsReview", "Quyết định phải ghi rõ người phê duyệt.");
             }
 
             if (string.IsNullOrWhiteSpace(decision.EvidenceId))
             {
-                throw new DomainValidationException("InvalidEvidence", "Decision must have an EvidenceRef for the directive/document (BR-13).");
+                throw new DomainValidationException("InvalidEvidence", "Quyết định phải có căn cứ chỉ đạo hoặc văn bản phê duyệt.");
             }
         }
 
@@ -159,17 +159,17 @@ namespace SACD.Domain.Rules
         {
             if (receipt.DeliveryId != delivery.Id)
             {
-                throw new DomainValidationException("RelationMismatch", "Receipt must reference the specific DeliveryId (BR-14).");
+                throw new DomainValidationException("RelationMismatch", "Phiếu nhận phải liên kết đúng lần giao tài liệu.");
             }
 
             if (string.IsNullOrWhiteSpace(receipt.ReceiverVersionId))
             {
-                throw new DomainValidationException("NeedsReview", "Receipt must designate receiverVersionId (BR-15).");
+                throw new DomainValidationException("NeedsReview", "Phiếu nhận phải ghi rõ người nhận.");
             }
 
             if (string.IsNullOrWhiteSpace(receipt.EvidenceId))
             {
-                throw new DomainValidationException("InvalidEvidence", "Receipt must link to a valid signed document evidenceId (BR-15).");
+                throw new DomainValidationException("InvalidEvidence", "Phiếu nhận phải có căn cứ tài liệu đã ký hợp lệ.");
             }
         }
 
@@ -182,19 +182,19 @@ namespace SACD.Domain.Rules
             {
                 if (string.IsNullOrWhiteSpace(report.ReviewerSid) || string.IsNullOrWhiteSpace(report.ReviewedUtc) || string.IsNullOrWhiteSpace(report.ChecklistJson))
                 {
-                    throw new DomainValidationException("NeedsReview", "Reviewed report must have reviewerSid, reviewedUtc, and checklistJson (BR-29).");
+                    throw new DomainValidationException("NeedsReview", "Báo cáo đã rà soát phải có người kiểm tra, thời điểm kiểm tra và danh mục kiểm tra.");
                 }
 
                 foreach (var claim in claims)
                 {
                     if (claim.Checked == 0)
                     {
-                        throw new DomainValidationException("NeedsReview", $"Claim '{claim.Text}' has not been checked yet (BR-28).");
+                        throw new DomainValidationException("NeedsReview", $"Nhận định '{claim.Text}' chưa được kiểm tra.");
                     }
 
                     if (claim.Kind == "Commentary" && string.IsNullOrWhiteSpace(claim.CommentaryReason))
                     {
-                        throw new DomainValidationException("InvalidEvidence", $"Commentary claim '{claim.Text}' must state a commentaryReason (BR-28).");
+                        throw new DomainValidationException("InvalidEvidence", $"Nhận xét '{claim.Text}' phải nêu rõ lý do.");
                     }
                 }
             }
@@ -207,12 +207,12 @@ namespace SACD.Domain.Rules
         {
             if (report.State != "Reviewed")
             {
-                throw new DomainValidationException("NeedsReview", "Cannot export in Submission mode when report is still Draft (BR-30).");
+                throw new DomainValidationException("NeedsReview", "Chưa thể xuất bản trình lãnh đạo khi báo cáo vẫn là bản nháp.");
             }
 
             if (report.IsStale != 0)
             {
-                throw new DomainValidationException("RevisionConflict", "Cannot export in Submission mode when report has been marked Stale (BR-30).");
+                throw new DomainValidationException("RevisionConflict", "Chưa thể xuất bản trình lãnh đạo khi nguồn báo cáo đã thay đổi và chưa được rà soát lại.");
             }
         }
 
@@ -224,12 +224,12 @@ namespace SACD.Domain.Rules
             // Valid transitions: Prepared -> Dispatched -> Verified / Unknown / Failed / AwaitingUser
             if (fromState == "Prepared" && toState != "Dispatched" && toState != "Cancelled")
             {
-                throw new DomainValidationException("InvalidTransition", $"Invalid RPA step transition from {fromState} to {toState}.");
+                throw new DomainValidationException("InvalidTransition", "Không thể chuyển bước tự động hóa theo trình tự đã yêu cầu.");
             }
 
             if (fromState == "Dispatched" && toState == "Prepared")
             {
-                throw new DomainValidationException("InvalidTransition", "Cannot revert from Dispatched back to Prepared (side effects may have occurred) (BR-20).");
+                throw new DomainValidationException("InvalidTransition", "Không thể quay về bước chuẩn bị sau khi đã thực hiện; cần đối soát kết quả trước.");
             }
         }
 
@@ -242,18 +242,18 @@ namespace SACD.Domain.Rules
             if (ev.StartOffset < 0 || ev.EndOffset <= ev.StartOffset || ev.EndOffset > rawBlockText.Length)
             {
                 throw new DomainValidationException("InvalidEvidence", 
-                    $"Evidence offset [{ev.StartOffset}, {ev.EndOffset}) is outside valid block bounds [0, {rawBlockText.Length}] (BR-09).");
+                    $"Vị trí căn cứ [{ev.StartOffset}, {ev.EndOffset}) nằm ngoài giới hạn đoạn văn bản [0, {rawBlockText.Length}].");
             }
 
             // Surrogate pair protection
             if (char.IsLowSurrogate(rawBlockText[ev.StartOffset]))
             {
-                throw new DomainValidationException("InvalidEvidence", "Evidence startOffset cannot split a UTF-16 surrogate pair (BR-09).");
+                throw new DomainValidationException("InvalidEvidence", "Điểm bắt đầu căn cứ không được cắt đôi một ký tự.");
             }
 
             if (char.IsHighSurrogate(rawBlockText[ev.EndOffset - 1]))
             {
-                throw new DomainValidationException("InvalidEvidence", "Evidence endOffset cannot split a UTF-16 surrogate pair (BR-09).");
+                throw new DomainValidationException("InvalidEvidence", "Điểm kết thúc căn cứ không được cắt đôi một ký tự.");
             }
 
             string quote = rawBlockText.Substring(ev.StartOffset, ev.EndOffset - ev.StartOffset);
@@ -264,7 +264,7 @@ namespace SACD.Domain.Rules
             if (!string.Equals(computedHash, ev.QuoteHash, StringComparison.OrdinalIgnoreCase))
             {
                 throw new DomainValidationException("InvalidEvidence", 
-                    $"Evidence quote hash mismatch. Expected {computedHash}, but record has {ev.QuoteHash} (BR-09).");
+                    "Mã kiểm tra trích dẫn không khớp nội dung nguồn; hãy kiểm tra lại căn cứ.");
             }
         }
 
@@ -274,7 +274,7 @@ namespace SACD.Domain.Rules
         public static void ValidateFileSignature(byte[] headerBytes, string extension)
         {
             if (headerBytes == null || headerBytes.Length < 4)
-                throw new DomainValidationException("InputLimitExceeded", "File header too small to determine signature.");
+                throw new DomainValidationException("InputLimitExceeded", "Phần đầu tệp quá ngắn để xác định định dạng.");
 
             string ext = extension.ToLowerInvariant();
             if (ext == ".pdf")
@@ -282,7 +282,7 @@ namespace SACD.Domain.Rules
                 // %PDF = 0x25, 0x50, 0x44, 0x46
                 if (headerBytes[0] != 0x25 || headerBytes[1] != 0x50 || headerBytes[2] != 0x44 || headerBytes[3] != 0x46)
                 {
-                    throw new DomainValidationException("InputLimitExceeded", "File claims to be PDF but magic bytes %PDF do not match (BR-05).");
+                    throw new DomainValidationException("InputLimitExceeded", "Tệp có đuôi PDF nhưng phần nhận dạng không đúng định dạng PDF.");
                 }
             }
             else if (ext == ".docx" || ext == ".zip")
@@ -290,7 +290,7 @@ namespace SACD.Domain.Rules
                 // PK\x03\x04 = 0x50, 0x4B, 0x03, 0x04
                 if (headerBytes[0] != 0x50 || headerBytes[1] != 0x4B)
                 {
-                    throw new DomainValidationException("InputLimitExceeded", "File claims to be DOCX/ZIP but PK header does not match (BR-05).");
+                    throw new DomainValidationException("InputLimitExceeded", "Tệp có đuôi DOCX hoặc ZIP nhưng phần nhận dạng không đúng định dạng.");
                 }
             }
         }

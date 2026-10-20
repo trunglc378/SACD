@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-20",
+  "sdk": "10.0.402",
+  "runtime": "10.0.13",
+  "build": { "success": true, "warnings": 0, "errors": 0 },
+  "xunit": { "passed": 41, "failed": 0, "skipped": 0, "trx": "2026-10-20-fixed.trx" },
+  "wpf_uia_smoke": { "passed": true, "target": "synthetic QLVB form", "image": "2026-10-20-workflow-ui.png" },
+  "cli_diagnostic_while_writer_holds_lock": "quick_check ok, read-only",
+  "windows_publish": "dist/SACD, Release win-x64 self-contained",
+  "interactive": "Published executable launched and separate test workspace opened",
+  "not_verified": [ "internal websites", "physical printer", "physical USB", "OCR engine", "local AI", "Docker", "i3/8GB performance" ]
+}

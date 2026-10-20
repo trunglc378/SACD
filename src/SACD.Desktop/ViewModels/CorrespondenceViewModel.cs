@@ -4,7 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
-using Microsoft.Win32;
+
 using SACD.Application.Contracts;
 using SACD.Domain.ValueObjects;
 using SACD.Infrastructure.Persistence;
@@ -33,17 +33,17 @@ public sealed class CorrespondenceViewModel : ViewModelBase, IDisposable
     public bool PackageScanned {get=>scanned;set=>SetProperty(ref scanned,value);}
     public string Profile {get;}
     public string RoleGuide => Profile=="Intake"
-        ? "MÁY 1: Kiểm tra email nội bộ → tải tệp → tiếp nhận → kiểm tra và lưu thông tin → xác nhận → in bản giấy → xuất USB."
+        ? "MÁY 1: Mở trang tiếp nhận nội bộ → tải tệp → tiếp nhận → kiểm tra và lưu thông tin → xác nhận → in bản giấy → xuất USB."
         : "MÁY 2: Nhập gói USB → điền QLVB → đối soát đã lưu → tạo/in phiếu → trình ký → cập nhật duyệt → giao → ký nhận → theo dõi hạn.";
     public string NextStep => SelectedCase?.State switch
     {
         "Received"=>"Bước 2: mở tệp gốc, đối chiếu nội dung, nhập thông tin bên dưới rồi Lưu thông tin và Xác nhận.",
         "Reviewed"=>"Bước 3: mở tệp gốc để in. Sau khi kiểm tra bản giấy, nhập căn cứ và bấm Xác nhận đã in.",
         "Printed"=>"Bước 4–5: xuất gói ZIP ra USB an toàn; mang USB và bản giấy sang Máy 2.",
-        "Imported"=>"Bước 6: nhập dữ liệu vào QLVB (thủ công hoặc RPA đã cấu hình). Lưu trong QLVB, nhập mã/số đến rồi Đối soát đã lưu.",
-        "Registered"=>"Bước 6.2–7: tạo phiếu Word có mã QR, kiểm tra/in phiếu, ghép với bản giấy rồi xác nhận đã trình lãnh đạo.",
+        "Imported"=>"Bước 6: nhập dữ liệu vào QLVB (thủ công hoặc tự động hóa đã cấu hình). Lưu trong QLVB, nhập mã/số đến rồi Đối soát đã lưu.",
+        "Registered"=>"Bước 6.2–7: tạo phiếu văn bản có mã QR, kiểm tra/in phiếu, ghép với bản giấy rồi xác nhận đã trình lãnh đạo.",
         "Submitted"=>"Bước 8–9: chờ phiếu đã ký. Nhập người duyệt, người/đội được giao, hạn và căn cứ quyết định rồi Cập nhật đã duyệt.",
-        "Approved"=>"Bước 10: chuyển bản giấy cho đúng người/đội được giao; nhập căn cứ và xác nhận Đã giao.",
+        "Approved"=>"Cập nhật chỉ đạo đã duyệt trên đúng hồ sơ QLVB, ghi căn cứ và Đối soát chỉ đạo; sau đó giao bản giấy theo phân công.",
         "Delivered"=>"Bước 11–12: sau khi người nhận ký, nhập căn cứ chữ ký rồi Xác nhận ký nhận.",
         "Acknowledged"=>"Theo dõi hạn. Chỉ xác nhận hoàn thành sau khi có kết quả xử lý thực tế và căn cứ.",
         "Completed"=>"Hồ sơ đã hoàn thành. Có thể tra cứu mã hồ sơ và lịch sử giao nhận.", _=>"Chọn hồ sơ trong danh sách."
@@ -87,17 +87,22 @@ public sealed class CorrespondenceViewModel : ViewModelBase, IDisposable
             if(action=="Refresh"){Reload();Status="Đã tải lại hồ sơ và hạn xử lý.";return;}
             if(action=="Receive")
             {
-                var picker=new OpenFileDialog{Filter="Văn bản (*.txt;*.docx;*.pdf)|*.txt;*.docx;*.pdf",Title="Chọn văn bản đã tải từ email nội bộ"};
+                var picker=new VietnameseFileDialog{Filter="Văn bản (*.txt;*.docx;*.pdf)|*.txt;*.docx;*.pdf",Title="Chọn văn bản đã tải từ trang nội bộ"};
                 if(picker.ShowDialog()!=true)return;
                 var received=await service.ReceiveAsync(picker.FileName);Reload(received.Id);Status="Đã tiếp nhận. Điền thông tin và đối chiếu tệp gốc trước khi xác nhận.";return;
             }
             if(action=="Import")
             {
-                var picker=new OpenFileDialog{Filter="Gói SACD (*.zip)|*.zip"};if(picker.ShowDialog()!=true)return;
+                var picker=new VietnameseFileDialog{Title="Chọn gói chuyển từ Máy 1",Filter="Gói SACD (*.zip)|*.zip"};if(picker.ShowDialog()!=true)return;
                 var imported=await service.ImportAsync(picker.FileName,PackageScanned);Reload(imported.Id);Status="Đã nhập hồ sơ và thông tin từ Máy 1. Không cần nhập lại từ đầu.";return;
             }
             var row=SelectedCase??throw new InvalidOperationException("Chọn một hồ sơ trước.");
             if(action=="Save"){row=await service.SaveAsync(row);Reload(row.Id);Status="Đã lưu thông tin. Nếu là Máy 1, tiếp tục đối chiếu rồi Xác nhận.";return;}
+            if(action=="DecisionExternal")
+            {
+                row=await service.ConfirmDecisionExternalAsync(row,Note);Reload(row.Id);Note="";
+                Status="Đã ghi căn cứ cán bộ đối soát chỉ đạo trên QLVB. Đây là xác nhận thủ công, chưa có kết nối tự động với trang nội bộ.";return;
+            }
             if(action=="Open")
             {
                 // Restore the extension only in the selected local view directory; never change the hash object.
@@ -108,31 +113,31 @@ public sealed class CorrespondenceViewModel : ViewModelBase, IDisposable
             }
             if(action=="Export")
             {
-                var picker=new SaveFileDialog{Filter="Gói SACD (*.zip)|*.zip",FileName=row.Code+".zip",OverwritePrompt=true};if(picker.ShowDialog()!=true)return;
+                var picker=new VietnameseFileDialog{SaveMode=true,Title="Lưu gói chuyển sang Máy 2",Filter="Gói SACD (*.zip)|*.zip",FileName=row.Code+".zip",ConfirmOverwrite=true};if(picker.ShowDialog()!=true)return;
                 if(File.Exists(picker.FileName))throw new InvalidOperationException("Chọn tên gói mới để giữ bản đã xuất.");
-                await service.ExportAsync(row,picker.FileName);Reload(row.Id);Status="Đã xuất gói chứa tệp gốc, thông tin và checksum. Chuyển vật lý qua USB an toàn.";return;
+                await service.ExportAsync(row,picker.FileName);Reload(row.Id);Status="Đã xuất gói chứa tệp gốc, thông tin và mã kiểm tra toàn vẹn. Chuyển vật lý qua USB an toàn.";return;
             }
             if(action=="Slip")
             {
                 if(Profile!="Management" || row.State!="Registered")throw new InvalidOperationException("Đối soát hồ sơ đã lưu trong QLVB trước khi tạo phiếu trình.");
-                var picker=new SaveFileDialog{Filter="Phiếu Word (*.docx)|*.docx",FileName="Phieu_"+row.Code+".docx"};if(picker.ShowDialog()!=true)return;
-                ProcessingSlipGenerator.Generate(picker.FileName,row);Process.Start(new ProcessStartInfo(picker.FileName){UseShellExecute=true});Status="Đã tạo phiếu Word và QR mã hồ sơ. Kiểm tra mẫu, in và trình lãnh đạo; SACD chưa ghi nhận đã duyệt.";return;
+                var picker=new VietnameseFileDialog{SaveMode=true,Title="Lưu phiếu trình lãnh đạo",Filter="Phiếu văn bản (*.docx)|*.docx",FileName="Phieu_"+row.Code+".docx"};if(picker.ShowDialog()!=true)return;
+                ProcessingSlipGenerator.Generate(picker.FileName,row);Process.Start(new ProcessStartInfo(picker.FileName){UseShellExecute=true});Status="Đã tạo phiếu văn bản và QR mã hồ sơ. Kiểm tra mẫu, in và trình lãnh đạo; SACD chưa ghi nhận đã duyệt.";return;
             }
             if(action=="Rpa")
             {
                 if(Profile!="Management" || row.State!="Imported")throw new InvalidOperationException("Chọn hồ sơ chờ nhập QLVB ở Máy 2.");
-                var picker=new OpenFileDialog{Filter="Cấu hình QLVB (*.json)|*.json",Title="Chọn mapping đã khảo sát cho QLVB thực tế"};if(picker.ShowDialog()!=true)return;
+                var picker=new VietnameseFileDialog{Filter="Cấu hình QLVB (*.json)|*.json",Title="Chọn cấu hình ánh xạ đã khảo sát cho QLVB thực tế"};if(picker.ShowDialog()!=true)return;
                 string mappingHash=Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(picker.FileName))).ToLowerInvariant();
-                await service.RecordAssistanceAsync(row,"RPA bắt đầu","Mapping SHA256: "+mappingHash+"; chưa lưu QLVB.");
+                await service.RecordAssistanceAsync(row,"Tự động hóa bắt đầu","Mã kiểm tra cấu hình: "+mappingHash+"; chưa lưu QLVB.");
                 try { await Task.Run(()=>ControlledFormFiller.Fill(picker.FileName,row)); }
-                catch {await service.RecordAssistanceAsync(row,"RPA cần đối soát","Dừng do lỗi; kiểm tra biểu mẫu thực tế trước khi thử lại.");throw;}
-                await service.RecordAssistanceAsync(row,"RPA điền xong","Đã đọc lại giá trị; dừng trước Lưu.");
-                Status="RPA đã điền và đọc lại các trường. Kiểm tra trên QLVB, tự bấm Lưu rồi nhập mã/số đến để đối soát.";return;
+                catch {await service.RecordAssistanceAsync(row,"Tự động hóa cần đối soát","Dừng do lỗi; kiểm tra biểu mẫu thực tế trước khi thử lại.");throw;}
+                await service.RecordAssistanceAsync(row,"Tự động hóa điền xong","Đã đọc lại giá trị; dừng trước Lưu.");
+                Status="Tự động hóa đã điền và đọc lại các trường. Kiểm tra trên QLVB, tự bấm Lưu rồi nhập mã/số đến để đối soát.";return;
             }
             row=await service.AdvanceAsync(row,action,Note);Reload(row.Id);Note="";
             Status="Đã ghi nhận: "+row.StateLabel+". "+NextStep;
         }
-        catch(Exception ex){Status="Chưa thực hiện: "+ex.Message;}
+        catch(Exception ex){Status="Chưa thực hiện: "+VietnameseDisplay.Error(ex);}
         finally{busy=false;CommandManager.InvalidateRequerySuggested();}
     }
     public void Dispose()=>timer.Stop();

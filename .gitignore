@@ -30,3 +30,7 @@ $RECYCLE.BIN/
 dist/
 publish/
 docker_data/
+.tools/
+.runs/
+*.pyc
+__pycache__/

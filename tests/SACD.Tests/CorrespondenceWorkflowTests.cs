@@ -56,6 +56,9 @@ public class CorrespondenceWorkflowTests : IDisposable
         row=await sb.AdvanceAsync(row,"Submit","Đã in phiếu và trình kèm bản giấy");
         await Assert.ThrowsAsync<InvalidOperationException>(()=>sb.AdvanceAsync(row,"Approve","Ký duyệt"));
         row=await sb.AdvanceAsync(row with {Leader="Trưởng phòng",ApprovedReceiver="Đội 2",DecisionEvidence="Phiếu ký 16/10/2026"},"Approve","Đã nhận lại phiếu ký");
+        await Assert.ThrowsAsync<InvalidOperationException>(()=>sb.AdvanceAsync(row,"Deliver","Chưa đối soát QLVB"));
+        row=await sb.ConfirmDecisionExternalAsync(row,"Đã mở DEN-001 và đối chiếu Đội 2 theo phiếu ký trên QLVB thử nghiệm");
+        Assert.Equal("Verified",row.DecisionExternalStatus);
         row=await sb.AdvanceAsync(row,"Deliver","Giao đúng người được chỉ đạo");
         await Assert.ThrowsAsync<InvalidOperationException>(()=>sb.AdvanceAsync(row,"Complete","Chưa có ký nhận"));
         row=await sb.AdvanceAsync(row with {ReceiptEvidence="Sổ giao nhận trang 12, người nhận đã ký"},"Receipt","Đã kiểm tra chữ ký");

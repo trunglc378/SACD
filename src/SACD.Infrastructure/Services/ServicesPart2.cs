@@ -57,23 +57,9 @@ VALUES (@id, @dossierId, @hash, @profile, 'Prepared', @created);";
             ), actor.CorrelationId);
         }
 
-        public async Task<OperationResult<PrintAttemptInfo>> SubmitAsync(string attemptId, ActorContext actor, CancellationToken ct = default)
-        {
-            string spoolJobId = $"SPOOL-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
-            using var conn = _dbContext.CreateConnection();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-UPDATE PrintAttempt 
-SET state='Submitted', spoolJobId=@spool 
-WHERE id=@id;";
-            cmd.Parameters.AddWithValue("@spool", spoolJobId);
-            cmd.Parameters.AddWithValue("@id", attemptId);
-            await cmd.ExecuteNonQueryAsync(ct);
-
-            return OperationResult<PrintAttemptInfo>.Ok(new PrintAttemptInfo(
-                attemptId, null, "", "Submitted", spoolJobId, DateTime.UtcNow.ToString("o")
-            ), actor.CorrelationId);
-        }
+        public Task<OperationResult<PrintAttemptInfo>> SubmitAsync(string attemptId, ActorContext actor, CancellationToken ct = default)
+            => Task.FromResult(OperationResult<PrintAttemptInfo>.Fail(ErrorCodes.NotConfigured,
+                "Chưa cấu hình bộ gửi máy in. In trong ứng dụng đọc rồi xác nhận bản giấy; không có mã spool giả.", actor.CorrelationId));
 
         public async Task<OperationResult<PrintAttemptInfo>> ConfirmAsync(PrintConfirmation confirmation, ActorContext actor, CancellationToken ct = default)
         {
@@ -456,28 +442,9 @@ VALUES (@id, @taskId, (SELECT COALESCE(MAX(sequenceNo),0)+1 FROM TaskEvent WHERE
             _dbContext = dbContext;
         }
 
-        public async Task<OperationResult<ExternalEntryResult>> FillAsync(ExternalFillRequest request, ActorContext actor, CancellationToken ct = default)
-        {
-            string attemptId = Guid.NewGuid().ToString("N");
-            string snapshotHash = Guid.NewGuid().ToString("N");
-
-            using var conn = _dbContext.CreateConnection();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-INSERT INTO ExternalEntryAttempt (id, dossierId, mappingVersionId, idempotencyKey, snapshotHash, state, createdUtc)
-VALUES (@id, @dossierId, @mapId, @idem, @hash, 'Verified', @created);";
-            cmd.Parameters.AddWithValue("@id", attemptId);
-            cmd.Parameters.AddWithValue("@dossierId", request.DossierId);
-            cmd.Parameters.AddWithValue("@mapId", request.MappingVersionId);
-            cmd.Parameters.AddWithValue("@idem", request.IdempotencyKey);
-            cmd.Parameters.AddWithValue("@hash", snapshotHash);
-            cmd.Parameters.AddWithValue("@created", DateTime.UtcNow.ToString("o"));
-            await cmd.ExecuteNonQueryAsync(ct);
-
-            return OperationResult<ExternalEntryResult>.Ok(new ExternalEntryResult(
-                attemptId, "Verified", $"QLVB-REF-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}"
-            ), actor.CorrelationId);
-        }
+        public Task<OperationResult<ExternalEntryResult>> FillAsync(ExternalFillRequest request, ActorContext actor, CancellationToken ct = default)
+            => Task.FromResult(OperationResult<ExternalEntryResult>.Fail(ErrorCodes.NotConfigured,
+                "Chưa cấu hình connector QLVB. Dùng adapter đã khảo sát trong Quy trình văn thư; chưa tạo mã hồ sơ đích.", actor.CorrelationId));
 
         public async Task<OperationResult<ExternalEntryResult>> ReconcileAsync(ReconciliationRequest request, ActorContext actor, CancellationToken ct = default)
         {
@@ -650,11 +617,11 @@ FROM TextSearch s
 JOIN Document d ON s.documentId = d.id
 JOIN Dossier dos ON d.dossierId = dos.id
 JOIN TextRevision tr ON s.revisionId = tr.id
-WHERE TextSearch MATCH @keyword
+WHERE TextSearch MATCH @keyword AND s.revisionId=d.currentRevisionId
 LIMIT @limit OFFSET @offset;";
-            cmd.Parameters.AddWithValue("@keyword", $"\"{searchParam}\"*");
+            cmd.Parameters.AddWithValue("@keyword", $"\"{searchParam.Replace("\"", "\"\"")}\"*");
             cmd.Parameters.AddWithValue("@limit", request.PageSize > 0 ? request.PageSize : 20);
-            cmd.Parameters.AddWithValue("@offset", (request.Page - 1) * request.PageSize);
+            cmd.Parameters.AddWithValue("@offset", (Math.Max(1, request.Page) - 1) * (request.PageSize > 0 ? request.PageSize : 20));
 
             using var reader = await cmd.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
@@ -745,10 +712,15 @@ ORDER BY 6 DESC;";
             };
 
             BusinessRuleValidator.ValidateFactVersion(fact);
+            if(fact.ValueStatus=="Known" && !InvariantDecimal.TryParseExact(fact.ValueDecimalText!,out _))
+                return OperationResult<FactResult>.Fail(ErrorCodes.NumericPrecisionLoss,"Giá trị không phải decimal invariant chính xác hoặc vượt giới hạn độ chính xác.",actor.CorrelationId);
 
             using var conn = _dbContext.CreateConnection();
             using var tx = conn.BeginTransaction();
 
+            var evidenceError = await ReportReadiness.ValidateEvidenceAsync(conn, tx, request.EvidenceId, request.SourceRevisionId, ct);
+            if (evidenceError != null)
+                return OperationResult<FactResult>.Fail(ErrorCodes.InvalidEvidence, evidenceError, actor.CorrelationId);
             using var cmd = conn.CreateCommand();
             cmd.Transaction = tx;
             cmd.CommandText = @"
@@ -788,6 +760,8 @@ VALUES (@id, @logId, 1, @metId, @srcId, @valStat, @valDec, @pStart, @pEnd, @pKin
 
         public async Task<OperationResult<DedupResult>> ResolveDuplicateAsync(DedupRequest request, ActorContext actor, CancellationToken ct = default)
         {
+            if(request.FactVersionIds.Count<2 || request.FactVersionIds.Distinct().Count()!=request.FactVersionIds.Count || !request.FactVersionIds.Contains(request.CanonicalFactVersionId))
+                return OperationResult<DedupResult>.Fail(ErrorCodes.NeedsReview,"Nhóm trùng cần các ID riêng biệt và có số liệu đại diện trong nhóm.",actor.CorrelationId);
             string id = Guid.NewGuid().ToString("N");
             string logicalId = $"DEDUP-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
             string now = DateTime.UtcNow.ToString("o");
@@ -825,93 +799,8 @@ VALUES (@id, @logId, 1, @canId, 'Resolved', @reason, @sid, @now);";
             return OperationResult<DedupResult>.Ok(new DedupResult(id, "Resolved", request.CanonicalFactVersionId), actor.CorrelationId);
         }
 
-        public async Task<OperationResult<AggregateResult>> AggregateAsync(AggregateRequest request, ActorContext actor, CancellationToken ct = default)
-        {
-            decimal total = 0m;
-            int count = 0;
-            string metricKind = "Flow";
-
-            using var conn = _dbContext.CreateConnection();
-
-            // Query metric definition kind
-            using (var cmdKind = conn.CreateCommand())
-            {
-                cmdKind.CommandText = "SELECT kind FROM MetricDefinitionVersion WHERE id=@id LIMIT 1;";
-                cmdKind.Parameters.AddWithValue("@id", request.MetricVersionId);
-                var kindObj = await cmdKind.ExecuteScalarAsync(ct);
-                if (kindObj != null)
-                {
-                    metricKind = kindObj.ToString()!;
-                }
-            }
-
-            var values = new List<decimal>();
-            foreach (var fId in request.ConfirmedFactVersionIds)
-            {
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT valueDecimalText FROM FactVersion WHERE id=@id AND status='Confirmed' AND valueStatus='Known' ORDER BY periodEnd DESC;";
-                cmd.Parameters.AddWithValue("@id", fId);
-                var valObj = await cmd.ExecuteScalarAsync(ct);
-                if (valObj != null && decimal.TryParse(valObj.ToString(), out var dec))
-                {
-                    values.Add(dec);
-                    count++;
-                }
-            }
-
-            string displayStr;
-            if (metricKind == "Stock" && values.Count > 0)
-            {
-                // Stock metric: take latest observation (first item ordered by periodEnd DESC)
-                total = values[0];
-                displayStr = total.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
-            }
-            else if (metricKind == "Ratio" && values.Count >= 2)
-            {
-                // Ratio metric: numerator = values[0], denominator = values[1]
-                long num = (long)values[0];
-                long den = (long)values[1];
-                if (den == 0)
-                {
-                    displayStr = "N/A (Mẫu số bằng 0)";
-                    total = 0m;
-                }
-                else
-                {
-                    var exactRatio = new ExactRatio(num, den);
-                    total = exactRatio.ToDecimal(4);
-                    displayStr = exactRatio.ToPercentageString(2);
-                }
-            }
-            else
-            {
-                // Flow or Cumulative: Sum of all observations
-                foreach (var v in values)
-                {
-                    total += v;
-                }
-                displayStr = total.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
-            }
-
-            string runId = Guid.NewGuid().ToString("N");
-            string snapshotHash = Guid.NewGuid().ToString("N");
-
-            using var cmdRun = conn.CreateCommand();
-            cmdRun.CommandText = @"
-INSERT INTO AggregationRun (id, metricVersionId, queryJson, resultJson, snapshotHash, state, createdUtc)
-VALUES (@id, @metId, @q, @res, @hash, 'Valid', @now);";
-            cmdRun.Parameters.AddWithValue("@id", runId);
-            cmdRun.Parameters.AddWithValue("@metId", request.MetricVersionId);
-            cmdRun.Parameters.AddWithValue("@q", JsonSerializer.Serialize(request));
-            cmdRun.Parameters.AddWithValue("@res", JsonSerializer.Serialize(new { total, count, metricKind }));
-            cmdRun.Parameters.AddWithValue("@hash", snapshotHash);
-            cmdRun.Parameters.AddWithValue("@now", DateTime.UtcNow.ToString("o"));
-            await cmdRun.ExecuteNonQueryAsync(ct);
-
-            return OperationResult<AggregateResult>.Ok(new AggregateResult(
-                runId, request.MetricVersionId, total, displayStr, count, "Valid"
-            ), actor.CorrelationId);
-        }
+        public Task<OperationResult<AggregateResult>> AggregateAsync(AggregateRequest request, ActorContext actor, CancellationToken ct = default)
+            => new VerifiedAggregation(_dbContext).AggregateAsync(request, actor, ct);
     }
 
     // CMP-13: ReportService
@@ -928,8 +817,31 @@ VALUES (@id, @metId, @q, @res, @hash, 'Valid', @now);";
             _wordGenerator = wordGenerator;
         }
 
+        public async Task<ReportStatistics> GetStatisticsAsync(string periodStart,string periodEnd,CancellationToken ct=default)
+        {
+            var start=DateOnly.ParseExact(periodStart,"yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture);
+            var end=DateOnly.ParseExact(periodEnd,"yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture);
+            if(start>end)throw new ArgumentException("Kỳ báo cáo không hợp lệ.");
+            var from=new DateTimeOffset(start.ToDateTime(TimeOnly.MinValue),TimeSpan.FromHours(7)).UtcDateTime;
+            var until=new DateTimeOffset(end.AddDays(1).ToDateTime(TimeOnly.MinValue),TimeSpan.FromHours(7)).UtcDateTime;
+            using var c=_dbContext.CreateConnection();using var q=c.CreateCommand();
+            q.CommandText=@"SELECT COUNT(*),
+                (SELECT COUNT(*) FROM TaskItem t JOIN Dossier x ON x.id=t.dossierId WHERE julianday(x.receivedUtc)>=julianday(@start) AND julianday(x.receivedUtc)<julianday(@end) AND t.state NOT IN ('Completed','Cancelled')),
+                (SELECT COUNT(*) FROM TaskItem t JOIN Dossier x ON x.id=t.dossierId WHERE julianday(x.receivedUtc)>=julianday(@start) AND julianday(x.receivedUtc)<julianday(@end) AND t.state='Completed')
+                FROM Dossier d WHERE julianday(d.receivedUtc)>=julianday(@start) AND julianday(d.receivedUtc)<julianday(@end);";
+            q.Parameters.AddWithValue("@start",from.ToString("o"));q.Parameters.AddWithValue("@end",until.ToString("o"));
+            using var r=await q.ExecuteReaderAsync(ct);await r.ReadAsync(ct);return new(r.GetInt32(0),r.GetInt32(1),r.GetInt32(2));
+        }
+
         public async Task<OperationResult<TemplateResult>> ValidateTemplateAsync(TemplateRequest request, ActorContext actor, CancellationToken ct = default)
         {
+            using (var document = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(request.DocxFilePath, false))
+            {
+                if (document.MainDocumentPart?.Document?.Body == null)
+                    return OperationResult<TemplateResult>.Fail(ErrorCodes.TemplateInvalid, "Mẫu Word không có nội dung.", actor.CorrelationId);
+            }
+            try { using var mapping = JsonDocument.Parse(request.MappingJson); }
+            catch (JsonException) { return OperationResult<TemplateResult>.Fail(ErrorCodes.TemplateInvalid, "Mapping phải là JSON hợp lệ.", actor.CorrelationId); }
             var fileObj = await _fileStore.StoreFileAsync(request.DocxFilePath, ct);
             string id = Guid.NewGuid().ToString("N");
             string logicalId = $"TPL-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
@@ -937,13 +849,18 @@ VALUES (@id, @metId, @q, @res, @hash, 'Valid', @now);";
             using var conn = _dbContext.CreateConnection();
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
+INSERT OR IGNORE INTO FileObject (hash, relativePath, sizeBytes, mediaType, createdUtc)
+VALUES (@hash, @relative, @size, @media, @created);
 INSERT INTO TemplateVersion (id, logicalId, versionNo, objectHash, mappingJson, mappingHash, createdUtc)
 VALUES (@id, @logId, 1, @hash, @map, @mapHash, @created);";
             cmd.Parameters.AddWithValue("@id", id);
             cmd.Parameters.AddWithValue("@logId", logicalId);
             cmd.Parameters.AddWithValue("@hash", fileObj.Hash);
             cmd.Parameters.AddWithValue("@map", request.MappingJson);
-            cmd.Parameters.AddWithValue("@mapHash", fileObj.Hash);
+            cmd.Parameters.AddWithValue("@relative", fileObj.RelativePath);
+            cmd.Parameters.AddWithValue("@size", fileObj.SizeBytes);
+            cmd.Parameters.AddWithValue("@media", fileObj.MediaType);
+            cmd.Parameters.AddWithValue("@mapHash", Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(request.MappingJson))).ToLowerInvariant());
             cmd.Parameters.AddWithValue("@created", DateTime.UtcNow.ToString("o"));
             await cmd.ExecuteNonQueryAsync(ct);
 
@@ -1046,6 +963,14 @@ VALUES (@id, @secId, 'Factual', @text, 0, NULL);";
                 await cmdClaim.ExecuteNonQueryAsync(ct);
             }
 
+            foreach (var aggregationId in request.AggregationIds.Distinct())
+            {
+                using var aggregation = conn.CreateCommand(); aggregation.Transaction = tx;
+                aggregation.CommandText = "INSERT INTO ReportAggregation(reportRevisionId,aggregationId) SELECT @rev,id FROM AggregationRun WHERE id=@id AND state='Valid';";
+                aggregation.Parameters.AddWithValue("@rev", revisionId); aggregation.Parameters.AddWithValue("@id", aggregationId);
+                if (await aggregation.ExecuteNonQueryAsync(ct) != 1)
+                    return OperationResult<ReportRevisionInfo>.Fail(ErrorCodes.NeedsReview, "Tổng hợp nguồn không tồn tại hoặc chưa hợp lệ.", actor.CorrelationId);
+            }
             // ReportSource
             foreach (var sId in request.SourceRevisionIds)
             {
@@ -1053,7 +978,7 @@ VALUES (@id, @secId, 'Factual', @text, 0, NULL);";
                 cmdSrc.Transaction = tx;
                 cmdSrc.CommandText = @"
 INSERT OR IGNORE INTO ReportSource (reportRevisionId, sourceRevisionId, sourceHash)
-VALUES (@revId, @srcId, 'HASH');";
+SELECT @revId, @srcId, d.objectHash FROM TextRevision t JOIN Document d ON d.id=t.documentId WHERE t.id=@srcId;";
                 cmdSrc.Parameters.AddWithValue("@revId", revisionId);
                 cmdSrc.Parameters.AddWithValue("@srcId", sId);
                 await cmdSrc.ExecuteNonQueryAsync(ct);
@@ -1072,12 +997,16 @@ VALUES (@revId, @srcId, 'HASH');";
             using var conn = _dbContext.CreateConnection();
             using var tx = conn.BeginTransaction();
 
+            var reviewError = await ReportReadiness.ValidateAsync(conn, tx, request.ReportRevisionId, request.ExpectedVersion, request.CheckedClaimIds, ct);
+            if (reviewError != null)
+                return OperationResult<ReportRevisionInfo>.Fail(ErrorCodes.NeedsReview, reviewError, actor.CorrelationId);
             // Mark claims checked
             foreach (var claimId in request.CheckedClaimIds)
             {
                 using var cmdClaim = conn.CreateCommand();
                 cmdClaim.Transaction = tx;
-                cmdClaim.CommandText = "UPDATE Claim SET checked=1 WHERE id=@id;";
+                cmdClaim.CommandText = "UPDATE Claim SET checked=1 WHERE id=@id AND sectionId IN (SELECT id FROM ReportSection WHERE reportRevisionId=@rev);";
+                cmdClaim.Parameters.AddWithValue("@rev", request.ReportRevisionId);
                 cmdClaim.Parameters.AddWithValue("@id", claimId);
                 await cmdClaim.ExecuteNonQueryAsync(ct);
             }
@@ -1112,7 +1041,7 @@ WHERE id=@id;";
                 using var reader = await cmd.ExecuteReaderAsync(ct);
                 if (!await reader.ReadAsync(ct))
                 {
-                    return OperationResult<ExportInfo>.Fail(ErrorCodes.NotFound, "Report revision not found.", actor.CorrelationId);
+                    return OperationResult<ExportInfo>.Fail(ErrorCodes.NotFound, "Không tìm thấy phiên bản báo cáo.", actor.CorrelationId);
                 }
                 rev = new ReportRevisionEntity
                 {
@@ -1129,6 +1058,9 @@ WHERE id=@id;";
                 try
                 {
                     BusinessRuleValidator.ValidateExportSubmission(rev);
+                    var readinessError = await ReportReadiness.ValidateAsync(conn, null, rev.Id, rev.VersionNo, Array.Empty<string>(), ct);
+                    if (readinessError != null)
+                        return OperationResult<ExportInfo>.Fail(ErrorCodes.NeedsReview, readinessError, actor.CorrelationId);
                 }
                 catch (DomainValidationException ex)
                 {
@@ -1136,6 +1068,14 @@ WHERE id=@id;";
                 }
             }
 
+            using (var template = conn.CreateCommand())
+            {
+                template.CommandText = "SELECT t.logicalId FROM TemplateVersion t JOIN ReportRevision r ON r.templateVersionId=t.id WHERE r.id=@id;";
+                template.Parameters.AddWithValue("@id", rev.Id);
+                if ((string?)await template.ExecuteScalarAsync(ct) != "SACD-BUILTIN-DRAFT")
+                    return OperationResult<ExportInfo>.Fail(ErrorCodes.TemplateUnsupported,
+                        "Bộ xuất hiện chỉ hỗ trợ mẫu nháp dựng sẵn; chưa điền mẫu Word tùy chỉnh. Không thay mẫu đơn vị bằng mẫu giả.", actor.CorrelationId);
+            }
             // Fetch sections
             var sections = new List<ReportSectionEntity>();
             using (var cmd = conn.CreateCommand())
@@ -1224,18 +1164,13 @@ VALUES (@id, @revId, @mode, @hash, @path, @sid, @created);";
 
         public Task<OperationResult<ScriptDraftInfo>> StartAsync(RecordRequest request, ActorContext actor, CancellationToken ct = default)
         {
-            string scriptId = Guid.NewGuid().ToString("N");
-            string session = Guid.NewGuid().ToString("N");
-            return Task.FromResult(OperationResult<ScriptDraftInfo>.Ok(new ScriptDraftInfo(
-                scriptId, session, request.TargetApplicationTitle
-            ), actor.CorrelationId));
+            return Task.FromResult(OperationResult<ScriptDraftInfo>.Fail(ErrorCodes.NotConfigured,
+                "Chưa có bộ ghi thao tác thật. Kịch bản cấu hình/mô phỏng là chức năng riêng.",actor.CorrelationId));
         }
 
         public Task<OperationResult<ScriptDraftInfo>> StopAsync(string scriptId, ActorContext actor, CancellationToken ct = default)
         {
-            return Task.FromResult(OperationResult<ScriptDraftInfo>.Ok(new ScriptDraftInfo(
-                scriptId, "", "Stopped"
-            ), actor.CorrelationId));
+            return Task.FromResult(OperationResult<ScriptDraftInfo>.Fail(ErrorCodes.NotConfigured,"Chưa có phiên ghi thao tác thật.",actor.CorrelationId));
         }
 
         public async Task<OperationResult<ScriptVersionInfo>> PublishScriptAsync(PublishScriptRequest request, ActorContext actor, CancellationToken ct = default)
@@ -1389,16 +1324,8 @@ VALUES (@id, @verId, @idem, @hash, @state, @cur, @sid, @now);";
 
         public async Task<OperationResult<RunInfo>> ControlAsync(RunControlRequest request, ActorContext actor, CancellationToken ct = default)
         {
-            using var conn = _dbContext.CreateConnection();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "UPDATE RpaRun SET state=@state WHERE id=@id;";
-            cmd.Parameters.AddWithValue("@state", request.Action);
-            cmd.Parameters.AddWithValue("@id", request.RunId);
-            await cmd.ExecuteNonQueryAsync(ct);
-
-            return OperationResult<RunInfo>.Ok(new RunInfo(
-                request.RunId, "", request.Action, 0, null
-            ), actor.CorrelationId);
+            await Task.CompletedTask;
+            return OperationResult<RunInfo>.Fail(ErrorCodes.NotConfigured,"Bộ chạy mô phỏng chưa hỗ trợ điều khiển worker đang chạy; không ép trạng thái DB thành thành công.",actor.CorrelationId);
         }
     }
 
@@ -1415,7 +1342,7 @@ VALUES (@id, @verId, @idem, @hash, @state, @cur, @sid, @now);";
         public async Task<OperationResult<ConfigInfo>> SaveConfigAsync(ConfigRequest request, ActorContext actor, CancellationToken ct = default)
         {
             string id = Guid.NewGuid().ToString("N");
-            string hash = Guid.NewGuid().ToString("N");
+            string hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(request.PayloadJson))).ToLowerInvariant();
             string now = DateTime.UtcNow.ToString("o");
 
             using var conn = _dbContext.CreateConnection();
@@ -1524,14 +1451,7 @@ VALUES (@id, @hash, @path, 'Verified', 'NotRun', @sid, @now);";
         }
 
         public Task<OperationResult<RestoreInfo>> RestoreAsync(RestoreRequest request, ActorContext actor, CancellationToken ct = default)
-        {
-            Directory.CreateDirectory(request.NewWorkspaceDirectory);
-            ZipFile.ExtractToDirectory(request.BackupZipPath, request.NewWorkspaceDirectory, true);
-
-            return Task.FromResult(OperationResult<RestoreInfo>.Ok(new RestoreInfo(
-                Guid.NewGuid().ToString("N"), request.NewWorkspaceDirectory, true, "Kho đã được phục hồi thành công và vượt qua kiểm tra toàn vẹn."
-            ), actor.CorrelationId));
-        }
+            => WorkspaceRecovery.RestoreAsync(request, actor, ct);
     }
 
     // CMP-17: AiAssistant (Optional, default disabled)

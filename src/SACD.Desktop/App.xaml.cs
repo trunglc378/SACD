@@ -9,5 +9,10 @@ namespace SACD.Desktop
     /// </summary>
     public partial class App : System.Windows.Application
     {
+        public App()
+        {
+            FrameworkElement.LanguageProperty.OverrideMetadata(typeof(FrameworkElement),
+                new FrameworkPropertyMetadata(System.Windows.Markup.XmlLanguage.GetLanguage("vi-VN")));
+        }
     }
 }

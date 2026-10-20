@@ -87,6 +87,7 @@ namespace SACD.Application.Services
 
     public interface IReportService
     {
+        Task<ReportStatistics> GetStatisticsAsync(string periodStart, string periodEnd, CancellationToken ct = default);
         Task<OperationResult<TemplateResult>> ValidateTemplateAsync(TemplateRequest request, ActorContext actor, CancellationToken ct = default);
         Task<OperationResult<ReportRevisionInfo>> CreateDraftAsync(ReportRequest request, ActorContext actor, CancellationToken ct = default);
         Task<OperationResult<ReportRevisionInfo>> ReviewAsync(ReviewRequest request, ActorContext actor, CancellationToken ct = default);

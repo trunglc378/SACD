@@ -1,3 +1,5 @@
+> Cập nhật 20/10/2026: [bản sửa, chạy thử và giới hạn](09_SACD_Ban_sua_va_chay_thu_2026-10-20.md). Các yêu cầu bên dưới là baseline thiết kế, không tự đồng nghĩa đã hiện thực.
+
 # SACD Ma trận truy vết và độ bao phủ thiết kế
 
 > Bổ sung bằng chứng triển khai 16/10/2026: `CorrespondenceWorkflowTests` kiểm tra luồng hai máy, trạng thái, USB, rowVersion, vai trò, revision/block, DOCX/QR, script version, báo cáo nháp/snapshot và hạn hoàn thành. `SACD.Desktop.Smoke` kiểm tra thao tác WPF và adapter UIA trên biểu mẫu giả lập. Tổng xUnit: 23 ca đạt trên máy phát triển. Kết quả này chưa ánh xạ đủ từng FR/NFR, chưa thay UAT hay thử QLVB/email/máy in của đơn vị. Phạm vi và hướng dẫn: [v1.2](08_SACD_Quy_trinh_hop_nhat_v1.2.md).

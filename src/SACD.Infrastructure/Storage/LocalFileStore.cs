@@ -39,7 +39,7 @@ namespace SACD.Infrastructure.Storage
         public async Task<FileObjectEntity> StoreFileAsync(string sourceFilePath, CancellationToken ct = default)
         {
             if (!File.Exists(sourceFilePath))
-                throw new FileNotFoundException($"Source file not found: {sourceFilePath}", sourceFilePath);
+                throw new FileNotFoundException($"Không tìm thấy tệp nguồn: {sourceFilePath}", sourceFilePath);
 
             using var stream = File.OpenRead(sourceFilePath);
             return await StoreStreamAsync(stream, Path.GetExtension(sourceFilePath), ct);
@@ -64,6 +64,8 @@ namespace SACD.Infrastructure.Storage
                         await targetStream.WriteAsync(buffer, 0, read, ct);
                         sha256.TransformBlock(buffer, 0, read, null, 0);
                         totalBytes += read;
+                        if (totalBytes > 50L * 1024 * 1024)
+                            throw new InvalidDataException("Tệp vượt giới hạn 50 MiB.");
                     }
                     sha256.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
                     hashString = BitConverter.ToString(sha256.Hash!).Replace("-", "").ToLowerInvariant();
@@ -105,7 +107,7 @@ namespace SACD.Infrastructure.Storage
 
         public string GetObjectAbsolutePath(string hash)
         {
-            return Path.Combine(_objectsDir, hash);
+            return Path.Combine(_objectsDir, new Sha256Hash(hash).Value);
         }
 
         public bool ObjectExists(string hash)

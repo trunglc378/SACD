@@ -19,7 +19,7 @@ namespace SACD.Cli
         {
             Console.WriteLine("=================================================================");
             Console.WriteLine(" SACD Core Engine CLI & Docker Runner (v1.1)");
-            Console.WriteLine(" Smart Air-gap Cabinet Desktop - Headless & Verification Worker");
+            Console.WriteLine(" Software for Automatically Compiling Documents - CLI");
             Console.WriteLine("=================================================================");
 
             string workspacePath = Environment.GetEnvironmentVariable("SACD_WORKSPACE") ?? Path.Combine(Directory.GetCurrentDirectory(), "workspace_data");
@@ -37,7 +37,7 @@ namespace SACD.Cli
             var textExtractor = new DocumentTextExtractor();
             var transferMgr = new UsbTransferManager();
             var auditLogger = new AuditLogger();
-            var actor = ActorContext.Create(Environment.UserName, "sacd-cli-worker");
+            var actor = ActorContext.Create(OperatingSystem.IsWindows() ? System.Security.Principal.WindowsIdentity.GetCurrent().User!.Value : Environment.UserName, "sacd-cli-worker");
 
             var workspaceService = new WorkspaceService(dbContext, auditLogger);
             var intakeService = new IntakeService(dbContext, fileStore, auditLogger);
@@ -46,8 +46,19 @@ namespace SACD.Cli
             var reportService = new ReportService(dbContext, fileStore, wordGen);
             var operationsService = new OperationsService(dbContext);
 
+            if (args.Contains("--diag"))
+            {
+                var database = Path.Combine(workspacePath, "sacd_workspace.db");
+                if (!File.Exists(database)) return 1;
+                using var diagnostic = new Microsoft.Data.Sqlite.SqliteConnection(new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder
+                { DataSource = database, Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadOnly }.ToString());
+                diagnostic.Open(); using var check = diagnostic.CreateCommand(); check.CommandText = "PRAGMA quick_check;";
+                bool healthy = (string?)check.ExecuteScalar() == "ok";
+                Console.WriteLine(healthy ? "[DIAG] SQLite quick_check: ok (read-only)." : "[DIAG] SQLite check failed.");
+                return healthy ? 0 : 1;
+            }
             // Step 1: Open/Initialize Workspace
-            Console.WriteLine("[INFO] Initializing SQLite database and 50 tables schema...");
+            Console.WriteLine("[INFO] Initializing SQLite database and 53 business tables...");
             var openRes = await workspaceService.OpenAsync(new WorkspaceOpenRequest(workspacePath, "Standard", 1), actor);
             if (!openRes.Success)
             {

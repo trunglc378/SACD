@@ -40,6 +40,12 @@ namespace SACD.Infrastructure.Services
                 return OperationResult<WorkspaceInfo>.Fail(ErrorCodes.WorkspaceBusy, "Kho đang bị phiên làm việc khác khóa.", actor.CorrelationId);
             }
 
+            var accessError = WorkspaceRecovery.CheckExistingOwner(_dbContext.DatabasePath, actor.WindowsSid, request.ExpectedSchemaVersion);
+            if (accessError != null)
+            {
+                _dbContext.ReleaseWriterLock();
+                return OperationResult<WorkspaceInfo>.Fail(ErrorCodes.AccessDenied, accessError, actor.CorrelationId);
+            }
             _dbContext.EnsureInitialized();
 
             using var conn = _dbContext.CreateConnection();
@@ -284,7 +290,7 @@ VALUES (@id, @dossierId, @hash, @name, @sourceKind, @sourceRef, 'Imported', @cre
             var objHashObj = await cmdDoc.ExecuteScalarAsync(ct);
             if (objHashObj == null)
             {
-                return OperationResult<TextRevisionResult>.Fail(ErrorCodes.NotFound, "Document not found.", actor.CorrelationId);
+                return OperationResult<TextRevisionResult>.Fail(ErrorCodes.NotFound, "Không tìm thấy văn bản.", actor.CorrelationId);
             }
 
             string objHash = objHashObj.ToString()!;
@@ -306,12 +312,14 @@ VALUES (@id, @dossierId, @hash, @name, @sourceKind, @sourceRef, 'Imported', @cre
             string originalName = (string)(await cmdName.ExecuteScalarAsync(ct))!;
             var blocks = await _textExtractor.ExtractBlocksAsync(physicalPath, revisionId, ct, Path.GetExtension(originalName));
 
+            var partialExtraction = blocks.Any(b => b.LocatorJson.Contains("needsOcr"));
             // Insert TextRevision
             using var cmdRev = conn.CreateCommand();
             cmdRev.Transaction = tx;
             cmdRev.CommandText = @"
 INSERT INTO TextRevision (id, documentId, versionNo, method, reviewState, createdUtc)
-VALUES (@id, @docId, @ver, 'Extract', 'NeedsReview', @created);";
+VALUES (@id, @docId, @ver, 'Extract', @reviewState, @created);";
+            cmdRev.Parameters.AddWithValue("@reviewState", partialExtraction ? "Partial" : "NeedsReview");
             cmdRev.Parameters.AddWithValue("@id", revisionId);
             cmdRev.Parameters.AddWithValue("@docId", request.DocumentId);
             cmdRev.Parameters.AddWithValue("@ver", versionNo);
@@ -378,15 +386,13 @@ WHERE id IN (
             await tx.CommitAsync(ct);
 
             return OperationResult<TextRevisionResult>.Ok(new TextRevisionResult(
-                revisionId, request.DocumentId, versionNo, "NeedsReview", blockDtos
+                revisionId, request.DocumentId, versionNo, partialExtraction ? "Partial" : "NeedsReview", blockDtos
             ), actor.CorrelationId);
         }
 
-        public async Task<OperationResult<TextRevisionResult>> OcrAsync(OcrRequest request, ActorContext actor, CancellationToken ct = default)
-        {
-            // Delegates to extraction with method='OCR'
-            return await ExtractAsync(new ExtractRequest(request.DocumentId, "OCR-Tesseract-Viet"), actor, ct);
-        }
+        public Task<OperationResult<TextRevisionResult>> OcrAsync(OcrRequest request, ActorContext actor, CancellationToken ct = default)
+            => Task.FromResult(OperationResult<TextRevisionResult>.Fail(ErrorCodes.NotConfigured,
+                "Chưa cấu hình OCR cục bộ. Trang scan không được coi là đã đọc hoặc đã đối chiếu.", actor.CorrelationId));
 
         public async Task<OperationResult<TextRevisionResult>> SaveReviewAsync(TextReviewRequest request, ActorContext actor, CancellationToken ct = default)
         {
@@ -401,6 +407,23 @@ WHERE id IN (
             current.Parameters.AddWithValue("@id", request.DocumentId);
             if ((await current.ExecuteScalarAsync(ct)) as string != request.ExpectedRevisionId)
                 return OperationResult<TextRevisionResult>.Fail(ErrorCodes.RevisionConflict, "Nội dung đã có phiên bản mới. Hãy tải lại văn bản.", actor.CorrelationId);
+            using var references = conn.CreateCommand();
+            references.Transaction = tx;
+            references.CommandText = @"SELECT
+                (SELECT COUNT(*) FROM EvidenceRef WHERE revisionId=@id) +
+                (SELECT COUNT(*) FROM FactVersion WHERE sourceRevisionId=@id) +
+                (SELECT COUNT(*) FROM ReportSource WHERE sourceRevisionId=@id)";
+            references.Parameters.AddWithValue("@id", request.ExpectedRevisionId);
+            if (Convert.ToInt64(await references.ExecuteScalarAsync(ct)) > 0)
+                return OperationResult<TextRevisionResult>.Fail(ErrorCodes.RevisionConflict,
+                    "Phiên bản đã được dùng làm căn cứ. Trích xuất thành phiên bản mới để sửa, không sửa đè nguồn đã tham chiếu.", actor.CorrelationId);
+            using var partial = conn.CreateCommand();
+            partial.Transaction = tx;
+            partial.CommandText = "SELECT COUNT(*) FROM TextBlock WHERE revisionId=@id AND locatorJson LIKE '%needsOcr%';";
+            partial.Parameters.AddWithValue("@id", request.ExpectedRevisionId);
+            if (Convert.ToInt64(await partial.ExecuteScalarAsync(ct)) > 0)
+                return OperationResult<TextRevisionResult>.Fail(ErrorCodes.NeedsReview,
+                    "Tài liệu có trang scan/chưa đọc được. Cần OCR trước khi xác nhận toàn văn.", actor.CorrelationId);
             using var countBlocks = conn.CreateCommand();
             countBlocks.Transaction = tx;
             countBlocks.CommandText = "SELECT id FROM TextBlock WHERE revisionId=@id;";
@@ -424,7 +447,7 @@ WHERE id=@id;";
 
             if (rows == 0)
             {
-                return OperationResult<TextRevisionResult>.Fail(ErrorCodes.NotFound, "TextRevision not found.", actor.CorrelationId);
+                return OperationResult<TextRevisionResult>.Fail(ErrorCodes.NotFound, "Không tìm thấy phiên bản nội dung văn bản.", actor.CorrelationId);
             }
 
             // Mark blocks reviewed

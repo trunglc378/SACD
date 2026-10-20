@@ -28,7 +28,21 @@ public sealed class CorrespondenceService(SqliteDatabaseContext db, ActorContext
         return rows;
     }
 
-    public CorrespondenceCase Get(string id) => List().Single(x => x.Id == id);
+    public CorrespondenceCase Get(string id)
+    {
+        using var connection=db.CreateConnection();using var query=connection.CreateCommand();
+        query.CommandText="SELECT payloadJson FROM CorrespondenceCase WHERE id=@id;";query.Parameters.AddWithValue("@id",id);
+        return query.ExecuteScalar() is string json ? JsonSerializer.Deserialize<CorrespondenceCase>(json)! : throw new InvalidOperationException("Không tìm thấy hồ sơ.");
+    }
+
+    public async Task<CorrespondenceCase> ConfirmDecisionExternalAsync(CorrespondenceCase input,string note)
+    {
+        RequireRole("Management");var old=Get(input.Id);
+        if(old.RowVersion!=input.RowVersion || old.State!="Approved")throw new InvalidOperationException("Chọn đúng phiên bản hồ sơ đã duyệt để đối soát chỉ đạo QLVB.");
+        if(string.IsNullOrWhiteSpace(old.ExternalRef) || string.IsNullOrWhiteSpace(note))throw new InvalidOperationException("Cần mã hồ sơ QLVB và căn cứ đối chiếu chỉ đạo thực tế.");
+        var next=old with {DecisionExternalStatus="Verified",DecisionExternalEvidence=note,RowVersion=old.RowVersion+1};
+        await Persist(old,next,"Đối soát chỉ đạo QLVB",note);return next;
+    }
 
     public async Task RecordAssistanceAsync(CorrespondenceCase row,string action,string note)
     {
@@ -74,6 +88,7 @@ public sealed class CorrespondenceService(SqliteDatabaseContext db, ActorContext
         if (!extracted.Success) throw new InvalidOperationException(extracted.Message);
         var row = new CorrespondenceCase { DocumentId=item.DocumentId,DossierId=imported.Value.DossierId,
             Code=imported.Value.BusinessCode,OriginalName=Path.GetFileName(file),ObjectHash=item.ObjectHash };
+        row=MetadataSuggestions.Apply(row,string.Join("\n",extracted.Value!.Blocks.Select(b=>b.RawTextNfc)));
         using var conn = db.CreateConnection(); using var tx = conn.BeginTransaction();
         Insert(conn,tx,row); await Event(conn,tx,row.Id,"Tiếp nhận tệp",row.OriginalName); tx.Commit();
         return row;
@@ -99,7 +114,10 @@ public sealed class CorrespondenceService(SqliteDatabaseContext db, ActorContext
             throw new InvalidOperationException("Thông tin đã xác nhận; không sửa đè sau khi in/trình duyệt. Chỉ cập nhật ở bước nghiệp vụ tương ứng.");
         RequireRole(old.State == "Received" ? "Intake" : "Management");
         var next = edited with { DocumentId=old.DocumentId,DossierId=old.DossierId,Code=old.Code,OriginalName=old.OriginalName,
-            ObjectHash=old.ObjectHash,State=old.State,RowVersion=old.RowVersion+1 };
+            ObjectHash=old.ObjectHash,State=old.State,RowVersion=old.RowVersion+1,
+            Leader=old.Leader,ApprovedReceiver=old.ApprovedReceiver,DecisionEvidence=old.DecisionEvidence,
+            ExternalRef=old.ExternalRef,DecisionExternalStatus=old.DecisionExternalStatus,DecisionExternalEvidence=old.DecisionExternalEvidence,
+            ReceiptEvidence=old.ReceiptEvidence,CompletedUtc=old.CompletedUtc };
         await Persist(old,next,"Lưu thông tin","Cán bộ cập nhật biểu mẫu"); return next;
     }
 
@@ -137,6 +155,8 @@ public sealed class CorrespondenceService(SqliteDatabaseContext db, ActorContext
             ValidateDate(input.DueDate);
         }
         if (action == "Receipt" && string.IsNullOrWhiteSpace(input.ReceiptEvidence)) throw new InvalidOperationException("Nhập căn cứ chữ ký nhận thực tế.");
+        if (action == "Deliver" && old.DecisionExternalStatus != "Verified")
+            throw new InvalidOperationException("Cập nhật chỉ đạo lãnh đạo trên đúng hồ sơ QLVB rồi đối soát trước khi ghi nhận giao giấy.");
         var next = old with { State=rule.To,RowVersion=old.RowVersion+1,
             ExternalRef=action=="Register"?input.ExternalRef:old.ExternalRef,
             Leader=action=="Approve"?input.Leader:old.Leader,
@@ -220,7 +240,8 @@ public sealed class CorrespondenceService(SqliteDatabaseContext db, ActorContext
             if(r.Read()) { var hash=r.GetString(0);var id=r.GetString(1);r.Close();if(hash!=Hash(meta))throw new InvalidDataException("TransferConflict: hồ sơ nguồn đã có nhưng nội dung/phiên bản khác. Cần đối soát.");tx.Rollback();return Get(id); }
         }
         using var content=new MemoryStream(bytes);var fo=await store.StoreStreamAsync(content,Path.GetExtension(envelope.Case.OriginalName));
-        var row=envelope.Case with {Id=Guid.NewGuid().ToString("N"),DocumentId=Guid.NewGuid().ToString("N"),DossierId=Guid.NewGuid().ToString("N"),State="Imported",RowVersion=1};
+        var row=envelope.Case with {Id=Guid.NewGuid().ToString("N"),DocumentId=Guid.NewGuid().ToString("N"),DossierId=Guid.NewGuid().ToString("N"),State="Imported",RowVersion=1,
+            ExternalRef="",Leader="",ApprovedReceiver="",DecisionEvidence="",ReceiptEvidence="",CompletedUtc="",DecisionExternalStatus="NotUpdated",DecisionExternalEvidence=""};
         string rev=Guid.NewGuid().ToString("N"),now=DateTime.UtcNow.ToString("o");
         using(var insert=c.CreateCommand())
         {

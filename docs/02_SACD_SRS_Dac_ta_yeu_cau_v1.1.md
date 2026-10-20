@@ -1,3 +1,5 @@
+> Cập nhật 20/10/2026: [bản sửa, chạy thử và giới hạn](09_SACD_Ban_sua_va_chay_thu_2026-10-20.md). Các yêu cầu bên dưới là baseline thiết kế, không tự đồng nghĩa đã hiện thực.
+
 # SACD SRS đặc tả yêu cầu phần mềm
 
 > Cập nhật triển khai 16/10/2026: phạm vi hợp nhất Trợ lý văn thư + RPA tại [quy trình v1.2](08_SACD_Quy_trinh_hop_nhat_v1.2.md). Giữ bộ FR/NFR v1.1 làm mục tiêu thiết kế; không suy ra đã đạt toàn bộ từ việc build hoặc 23 test đạt. Email tự động, OCR scan/PDF, AI và mapping QLVB thực tế còn phụ thuộc. Luồng hiện thực có vai trò máy, xác nhận thủ công, gói USB, trình duyệt/giao/ký nhận tách biệt và theo dõi hạn.
@@ -1235,7 +1237,7 @@ Mỗi yêu cầu có kiểm tra chấp nhận, dữ liệu, thành phần và ca
 
 ### NFR-01 Offline và cách ly
 
-**Yêu cầu:** Chạy toàn bộ luồng lõi với kết nối Internet tắt; không có DNS/HTTP ngoài loopback do SACD phát sinh; không nối máy A/B. Email client hiện hữu được đo riêng.
+**Yêu cầu:** Chạy toàn bộ luồng lõi với kết nối Internet tắt; connector chỉ truy cập website nội bộ đã cấu hình của máy đang dùng; cấm Internet và cấm nối máy A/B. Loopback chỉ dùng cho tiến trình cục bộ được cấu hình. Phân biệt lưu lượng nội bộ với Internet khi kiểm tra.
 
 **Cách đo:** Packet capture/process attribution trong phiên thử; 0 kết nối ngoại vi của SACD trong 10 luồng mẫu.
 
@@ -1482,4 +1484,4 @@ Ngoài phạm vi: cloud, mobile riêng, nối mạng hai máy, ký số/chứng 
 
 ## 9 Kiểm soát phiên bản và truy vết
 
-Mỗi FR/BR/NFR liên kết tới [Đặc tả Use Case](04_SACD_Use_Case_v1.1.md), [SDS đặc tả thiết kế phần mềm](03_SACD_SDS_Dac_ta_thiet_ke_v1.1.md), [Mô hình dữ liệu ERD và từ điển dữ liệu](05_SACD_Du_lieu_ERD_v1.1.md) và [Chiến lược và ca kiểm thử](10_SACD_Kiem_thu_Test_Cases_v1.1.md). [Ma trận truy vết và độ bao phủ thiết kế](07_SACD_Ma_tran_truy_vet_v1.1.md) là bảng đối chiếu chính; DEC mở ở [ADR quyết định kiến trúc và vấn đề mở](17_SACD_ADR_Quyet_dinh_Cau_hoi_v1.1.md). Baseline chỉ được chốt theo checklist và người có trách nhiệm trong [Kế hoạch UAT và tiêu chí nghiệm thu](11_SACD_UAT_Nghiem_thu_v1.1.md).
+Mỗi FR/BR/NFR liên kết tới [Đặc tả Use Case](04_SACD_Use_Case_v1.1.md), [SDS đặc tả thiết kế phần mềm](03_SACD_SDS_Dac_ta_thiet_ke_v1.1.md), [Mô hình dữ liệu ERD và từ điển dữ liệu](05_SACD_Du_lieu_ERD_v1.1.md) và Chiến lược và ca kiểm thử (tài liệu riêng chưa có trong checkout). [Ma trận truy vết và độ bao phủ thiết kế](07_SACD_Ma_tran_truy_vet_v1.1.md) là bảng đối chiếu chính; DEC mở ở ADR quyết định kiến trúc và vấn đề mở (tài liệu riêng chưa có trong checkout). Baseline chỉ được chốt theo checklist và người có trách nhiệm trong Kế hoạch UAT và tiêu chí nghiệm thu (tài liệu riêng chưa có trong checkout).

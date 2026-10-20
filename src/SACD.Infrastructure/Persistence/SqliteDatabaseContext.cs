@@ -21,7 +21,7 @@ namespace SACD.Infrastructure.Persistence
         public SqliteDatabaseContext(string workspaceDirectory)
         {
             if (string.IsNullOrWhiteSpace(workspaceDirectory))
-                throw new ArgumentException("Workspace directory cannot be empty.", nameof(workspaceDirectory));
+                throw new ArgumentException("Đường dẫn kho làm việc không được để trống.", nameof(workspaceDirectory));
 
             _workspaceDirectory = Path.GetFullPath(workspaceDirectory);
             Directory.CreateDirectory(_workspaceDirectory);
@@ -65,6 +65,7 @@ namespace SACD.Infrastructure.Persistence
                 DataSource = _dbFilePath,
                 Mode = SqliteOpenMode.ReadWriteCreate,
                 ForeignKeys = true,
+                Pooling = false,
                 Cache = SqliteCacheMode.Shared
             };
 

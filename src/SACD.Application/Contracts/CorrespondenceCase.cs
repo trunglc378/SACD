@@ -25,6 +25,8 @@ public record CorrespondenceCase
     public string DecisionEvidence { get; set; } = "";
     public string ReceiptEvidence { get; set; } = "";
     public string ExternalRef { get; set; } = "";
+    public string DecisionExternalStatus { get; set; } = "NotUpdated";
+    public string DecisionExternalEvidence { get; set; } = "";
     public string State { get; set; } = "Received";
     public int RowVersion { get; set; } = 1;
     public string CompletedUtc { get; set; } = "";
@@ -49,7 +51,7 @@ public record CorrespondenceCase
         "Received" => "M1 · Chờ kiểm tra", "Reviewed" => "M1 · Đã xác nhận", "Printed" => "M1 · Đã in, sẵn sàng USB",
         "Imported" => "M2 · Chờ nhập QLVB", "Registered" => "M2 · Đã đối soát QLVB", "Submitted" => "Chờ lãnh đạo duyệt",
         "Approved" => "Đã duyệt, chờ giao", "Delivered" => "Đã giao, chờ ký nhận", "Acknowledged" => "Đã ký nhận, đang xử lý",
-        "Completed" => "Đã hoàn thành", _ => State
+        "Completed" => "Đã hoàn thành", _ => "Chưa xác định"
     };
 }
 

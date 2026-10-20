@@ -1,10 +1,10 @@
 # ==============================================================================
 # Dockerfile: SACD Core Engine & Verification Worker
-# Base: Multi-stage build for .NET 8.0 Linux Container (Debian Chiseled/Alpine)
+# Base: Multi-stage build for .NET 10.0 Linux Container (Debian Chiseled/Alpine)
 # ==============================================================================
 
 # STAGE 1: Build & Publish
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /app
 
 # Copy Solution & Projects for efficient caching
@@ -27,7 +27,7 @@ WORKDIR /app/src/SACD.Cli
 RUN dotnet publish -c Release -o /out
 
 # STAGE 2: Runtime Container
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/runtime:10.0 AS runtime
 WORKDIR /app
 
 # Setup local storage volume for air-gap data
